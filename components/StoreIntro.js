@@ -1,4 +1,4 @@
-'use client';import {useEffect,useRef,useState} from 'react';import LeanPourCanvas from './LeanPourCanvas';import INTRO_ART from '../lib/introV6Art';
+'use client';import {useEffect,useRef,useState} from 'react';import LeanPourCanvas from './LeanPourCanvas';
 
 const VIDEO_ID='z0G04bgZHwc';
 
@@ -15,8 +15,8 @@ export default function StoreIntro(){
  useEffect(()=>{if(!visible)return;command(muted?'mute':'unMute')},[muted,visible]);
  const enter=()=>{if(entering)return;setEntering(true);try{sessionStorage.setItem('pmv2-intro-v7-seen','1')}catch{};setTimeout(()=>{pause();setVisible(false);document.documentElement.classList.remove('introLocked')},2150)};
  if(!visible)return null;
- return <div className={entering?'storeIntro introV6 entering':'storeIntro introV6'} role="dialog" aria-modal="true">
-   <iframe ref={playerRef} className="introV6YT" title="Future - F*ck Up Some Commas" src={'https://www.youtube.com/embed/'+VIDEO_ID+'?enablejsapi=1&autoplay=1&controls=0&loop=1&playlist='+VIDEO_ID+'&playsinline=1&rel=0'} allow="autoplay; encrypted-media" onLoad={()=>{syncVolume();command('playVideo')}}/>
+ return <div className={entering?'storeIntro introV7 entering':'storeIntro introV7'} role="dialog" aria-modal="true">
+   <iframe ref={playerRef} className="introV7YT" title="Future - F*ck Up Some Commas" src={'https://www.youtube.com/embed/'+VIDEO_ID+'?enablejsapi=1&autoplay=1&controls=0&loop=1&playlist='+VIDEO_ID+'&playsinline=1&rel=0'} allow="autoplay; encrypted-media" onLoad={()=>{syncVolume();command('playVideo')}}/>
    <img className="introV7Artwork" src="/images/intro/pmv2-exact.svg" alt="Project Misfits Store welcome"/>
    <button className="introV7LogoHit" onClick={enter} aria-label="Enter Project Misfits Store"/>
    <button className="introV7ContinueHit" onClick={enter} aria-label="Continue to store"/>
