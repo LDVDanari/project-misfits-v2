@@ -7,6 +7,11 @@
   "changelog": [
     {
       "date": "OCT 2026",
+      "title": "Join Flow & Security Pass",
+      "body": "Added the new-player join flow, expanded navigation and sitemap coverage, polished install metadata, and upgraded Next.js to a patched 15.5.24 release."
+    },
+    {
+      "date": "OCT 2026",
       "title": "PMv2 Website v2",
       "body": "Live city status, Discord integration, storefront upgrades, mobile navigation, cart support, applications, searchable rules and production hardening are being built."
     },
