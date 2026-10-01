@@ -10,10 +10,12 @@ function normalizeEnv(value,key){
  return v;
 }
 function creds(){
- return{
-  user:normalizeEnv(process.env.OWNER_USERNAME,'OWNER_USERNAME'),
-  pass:normalizeEnv(process.env.OWNER_PASSWORD,'OWNER_PASSWORD')
- };
+ const user=normalizeEnv(process.env.OWNER_USERNAME,'OWNER_USERNAME');
+ const b64pass=normalizeEnv(process.env.OWNER_PASSWORD_B64,'OWNER_PASSWORD_B64');
+ let pass='';
+ if(b64pass){try{pass=new TextDecoder().decode(b64urlDecode(b64pass)).normalize('NFC').trim()}catch{}}
+ if(!pass)pass=normalizeEnv(process.env.OWNER_PASSWORD,'OWNER_PASSWORD').normalize('NFC');
+ return{user,pass};
 }
 function b64urlDecode(value){
   value=value.replace(/-/g,'+').replace(/_/g,'/');
