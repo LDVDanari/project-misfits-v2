@@ -1,0 +1,2 @@
+'use client';import {useCart} from './CartProvider';
+export default function AddToCartButton({product}){const c=useCart();const unavailable=product.price==='COMING SOON';return <button className={unavailable?'primary disabled':'primary'} disabled={unavailable} onClick={()=>!unavailable&&c.add(product)}>{unavailable?'COMING SOON':'ADD TO CART'}</button>}
