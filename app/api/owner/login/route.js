@@ -12,7 +12,7 @@ export async function POST(req){
   const expectedUser=process.env.OWNER_USERNAME||'';
   const expectedPass=process.env.OWNER_PASSWORD||'';
   if(!expectedUser||!expectedPass)return NextResponse.json({error:'Owner login is not configured.'},{status:503});
-  const userOk=crypto.timingSafeEqual(Buffer.from(String(username)),Buffer.from(expectedUser));
+  const userOk=Buffer.byteLength(String(username))===Buffer.byteLength(expectedUser)&&crypto.timingSafeEqual(Buffer.from(String(username)),Buffer.from(expectedUser));
   const passOk=Buffer.byteLength(String(password))===Buffer.byteLength(expectedPass)&&crypto.timingSafeEqual(Buffer.from(String(password)),Buffer.from(expectedPass));
   if(!userOk||!passOk)return NextResponse.json({error:'Invalid owner credentials.'},{status:401});
   const exp=Date.now()+12*60*60*1000;
