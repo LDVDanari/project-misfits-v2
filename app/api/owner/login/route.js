@@ -26,15 +26,15 @@ export async function POST(req){
  try{
   const {username,password}=await req.json();
   const {user:expectedUser,pass:expectedPass}=credentials();
-  const suppliedUser=String(username??'').trim();
-  const suppliedPass=String(password??'').trim();
+  const suppliedUser=String(username??'').normalize('NFC').trim();
+  const suppliedPass=String(password??'').normalize('NFC').trim();
   if(!expectedUser||!expectedPass)return NextResponse.json({error:'Owner login is not configured.'},{status:503});
-  const userOk=safeEqual(suppliedUser.toLowerCase(),expectedUser.toLowerCase());
-  const passOk=safeEqual(suppliedPass,expectedPass);
-  if(!userOk||!passOk)return NextResponse.json({error:'Invalid owner credentials.'},{status:401});
+  const normalizedExpectedUser=expectedUser.normalize('NFC');const normalizedExpectedPass=expectedPass.normalize('NFC');const userOk=safeEqual(suppliedUser.toLowerCase(),normalizedExpectedUser.toLowerCase());
+  const passOk=safeEqual(suppliedPass,normalizedExpectedPass);
+  if(!userOk)return NextResponse.json({error:'Owner username does not match the live Coolify value.',reason:'username'},{status:401});if(!passOk)return NextResponse.json({error:'Owner password does not match the live Coolify value.',reason:'password'},{status:401});
   const exp=Date.now()+12*60*60*1000;
-  const payload=b64(expectedUser+'|'+exp);
-  const token=payload+'.'+sign(payload,expectedUser,expectedPass);
+  const payload=b64(normalizedExpectedUser+'|'+exp);
+  const token=payload+'.'+sign(payload,normalizedExpectedUser,normalizedExpectedPass);
   const res=NextResponse.json({ok:true});
   res.cookies.set(COOKIE,token,{httpOnly:true,secure:true,sameSite:'strict',path:'/',maxAge:12*60*60});
   return res;
