@@ -38,3 +38,190 @@ button,input{font:inherit}a,button{transition:color .2s,border-color .2s,backgro
 .cartReview{text-align:center}.checkoutLayout{display:grid;grid-template-columns:1.1fr .9fr;gap:22px;margin-top:45px}.checkoutItems,.checkoutNotice{border:1px solid #35223f;background:#0b0910;padding:28px}.checkoutItems article{display:flex;justify-content:space-between;gap:20px;padding:16px 0;border-top:1px solid #2d2035}.checkoutItems article:first-of-type{margin-top:18px}.checkoutItems article div{display:flex;flex-direction:column;gap:5px}.checkoutItems small{color:#948c9c}.checkoutItems strong{color:#d8ad37}.checkoutTotal{display:flex;justify-content:space-between;padding-top:20px;margin-top:5px;border-top:1px solid #4b2a58}.checkoutTotal span{font-size:10px;color:#918999;font-weight:900;letter-spacing:.1em}.checkoutTotal b{font-size:24px}.checkoutNotice h2{font-size:32px;margin:10px 0}.checkoutNotice p,.checkoutEmpty p{color:#aaa2b2;line-height:1.7}.checkoutNotice .gold,.checkoutNotice .primary{display:block;text-align:center;margin-top:10px}.checkoutEmpty{margin-top:40px;padding:35px;border:1px solid #35223f;background:#0b0910}@media(max-width:850px){.checkoutLayout{grid-template-columns:1fr}}
 
 .joinStatus{display:grid;grid-template-columns:1fr 1.25fr;gap:16px;margin:38px 0}.joinStatus>div{border:1px solid #35223f;background:#0b0910;padding:22px}.joinSteps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:42px 0}.joinSteps article{border:1px solid #35223f;background:linear-gradient(145deg,#0d0a11,#08070a);padding:26px}.joinSteps small{color:#d7ad37;font-weight:900;letter-spacing:.12em}.joinSteps h2{font-size:22px;margin:10px 0}.joinSteps p{color:#aaa2b2;line-height:1.65}.joinActions{display:flex;gap:10px;flex-wrap:wrap}.directConnect{margin-top:24px;padding:20px;border-left:3px solid #b93cff;background:#0b0910;display:flex;gap:15px;align-items:center}.directConnect small{font-size:10px;color:#8e8695;font-weight:900;letter-spacing:.12em}.directConnect code{color:#e1bb45;font-size:17px}@media(max-width:900px){.joinStatus,.joinSteps{grid-template-columns:1fr 1fr}}@media(max-width:600px){.joinStatus,.joinSteps{grid-template-columns:1fr}.joinActions{display:grid}.joinActions a{text-align:center}.directConnect{align-items:flex-start;flex-direction:column}}
+
+
+/* ===== PMv2 UI hotfix: hero stats + responsive navigation ===== */
+.nav{
+  height:76px;
+  padding:0 clamp(20px,4vw,64px);
+  background:linear-gradient(180deg,rgba(7,5,10,.96),rgba(5,4,8,.86));
+  border-bottom:1px solid rgba(174,67,255,.28);
+  box-shadow:0 10px 40px rgba(0,0,0,.28);
+}
+.brand{font-size:23px;letter-spacing:-.04em}
+.nav nav{gap:clamp(16px,1.8vw,28px)}
+.nav nav a{position:relative;color:#dcd7e2}
+.nav nav a:after{content:"";position:absolute;left:0;right:100%;bottom:-9px;height:2px;background:linear-gradient(90deg,#8e1dff,#d9b244);transition:.2s}
+.nav nav a:hover:after{right:0}
+.discord.desktopDiscord{
+  border:1px solid rgba(174,67,255,.72);
+  border-radius:10px;
+  padding:11px 18px;
+  background:linear-gradient(135deg,rgba(115,26,180,.18),rgba(12,9,16,.75));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.02),0 0 24px rgba(144,36,221,.13);
+}
+.discord.desktopDiscord:hover{border-color:#c34cff;background:rgba(126,46,208,.2);transform:translateY(-1px)}
+
+.stats{
+  width:min(1040px,calc(100% - 48px));
+  bottom:26px;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  background:linear-gradient(135deg,rgba(9,7,13,.92),rgba(14,9,19,.82));
+  border:1px solid rgba(145,70,181,.34);
+  border-radius:14px;
+  overflow:hidden;
+  backdrop-filter:blur(18px);
+  box-shadow:0 18px 60px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.025);
+}
+.stats .heroStat{
+  min-width:0;
+  min-height:78px;
+  padding:17px 22px;
+  border-right:1px solid rgba(96,67,110,.34);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:5px;
+}
+.stats .heroStat:last-child{border-right:0}
+.stats .heroStat b{
+  color:#f8f5fb;
+  font-size:11px;
+  line-height:1.15;
+  letter-spacing:.035em;
+}
+.stats .heroStat small{
+  display:block;
+  margin:0;
+  color:#857d8e;
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.08em;
+}
+.stats .heroStatLive{background:linear-gradient(90deg,rgba(67,229,138,.055),transparent)}
+.stats .heroStatLive .liveStatus{width:100%;gap:12px}
+.stats .heroStatLive .liveStatus>div{min-width:0}
+.stats .heroStatLive .liveStatus b{font-size:11px;white-space:nowrap}
+.stats .heroStatLive .liveStatus small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stats .statusDot{
+  display:block!important;
+  flex:0 0 10px;
+  width:10px!important;
+  height:10px!important;
+  min-width:10px;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:999px;
+  background:#6d6970;
+  box-shadow:0 0 0 4px rgba(109,105,112,.09),0 0 14px rgba(109,105,112,.25);
+}
+.stats .statusDot.online{
+  background:#50e58a;
+  box-shadow:0 0 0 4px rgba(80,229,138,.09),0 0 16px rgba(80,229,138,.45);
+}
+
+.menuButton{
+  display:none;
+  position:relative;
+  width:44px;
+  height:44px;
+  margin-left:auto;
+  padding:0;
+  border:1px solid rgba(166,72,216,.5);
+  border-radius:10px;
+  background:linear-gradient(145deg,rgba(24,15,30,.92),rgba(8,7,11,.96));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.025),0 8px 24px rgba(0,0,0,.25);
+  cursor:pointer;
+}
+.menuButton span{
+  position:absolute;
+  left:12px;
+  width:18px;
+  height:2px;
+  padding:0!important;
+  border:0!important;
+  background:#f7f3fa;
+  border-radius:999px;
+  transition:transform .22s,opacity .22s,top .22s;
+}
+.menuButton span:nth-child(1){top:14px}
+.menuButton span:nth-child(2){top:21px}
+.menuButton span:nth-child(3){top:28px}
+.menuButton.open span:nth-child(1){top:21px;transform:rotate(45deg)}
+.menuButton.open span:nth-child(2){opacity:0}
+.menuButton.open span:nth-child(3){top:21px;transform:rotate(-45deg)}
+
+.mobileMenu{
+  position:fixed;
+  top:86px;
+  left:auto;
+  right:18px;
+  width:min(390px,calc(100vw - 36px));
+  padding:18px;
+  border:1px solid rgba(153,59,199,.45);
+  border-radius:14px;
+  background:linear-gradient(155deg,rgba(14,10,18,.985),rgba(6,5,8,.985));
+  backdrop-filter:blur(22px);
+  box-shadow:0 24px 70px rgba(0,0,0,.58);
+}
+.mobileMenu.open{display:block}
+.mobileMenuGrid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.mobileMenuGrid a{
+  padding:13px 14px;
+  border-radius:8px;
+  color:#d8d2de!important;
+  background:transparent;
+  font-size:11px!important;
+}
+.mobileMenuGrid a:hover{background:rgba(159,54,218,.1);color:#fff!important}
+.mobileMenuActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(110,77,126,.26)}
+.mobileMenuActions a{text-align:center}
+
+@media(max-width:1080px){
+  .nav nav{display:none!important}
+  .nav .desktopDiscord{display:none!important}
+  .menuButton{display:block!important}
+}
+@media(min-width:1081px){
+  .menuButton,.mobileMenu{display:none!important}
+}
+@media(max-width:700px){
+  .hero{
+    min-height:auto;
+    padding-top:118px;
+    padding-bottom:24px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+  }
+  .announcementBar+.hero{min-height:auto}
+  .heroContent{padding:28px 20px 18px}
+  .stats{
+    position:relative;
+    left:auto;
+    right:auto;
+    bottom:auto;
+    width:calc(100% - 32px);
+    margin:24px 16px 0;
+    grid-template-columns:1fr 1fr;
+    border-radius:12px;
+  }
+  .stats .heroStat{min-height:72px;padding:15px 16px}
+  .stats .heroStat:nth-child(2){border-right:0}
+  .stats .heroStat:nth-child(-n+2){border-bottom:1px solid rgba(96,67,110,.34)}
+  .mobileMenu{top:84px;right:12px;width:calc(100vw - 24px)}
+}
+@media(max-width:430px){
+  .nav{height:70px;padding:0 14px}
+  .brand{font-size:21px}
+  .menuButton{width:42px;height:42px}
+  .mobileMenu{top:78px}
+  .mobileMenuGrid{grid-template-columns:1fr 1fr}
+  .mobileMenuGrid a{padding:12px 10px;font-size:10px!important}
+  .mobileMenuActions{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr}
+  .stats .heroStat{border-right:0!important;border-bottom:1px solid rgba(96,67,110,.34)!important}
+  .stats .heroStat:last-child{border-bottom:0!important}
+}
