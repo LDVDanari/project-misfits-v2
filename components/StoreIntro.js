@@ -4,7 +4,7 @@ const LOGO="data:image/webp;base64,UklGRnQlAABXRUJQVlA4IGglAABQfACdASrcALAAPslSn
 export default function StoreIntro(){
  const [visible,setVisible]=useState(false),[entering,setEntering]=useState(false),[playing,setPlaying]=useState(false),[muted,setMuted]=useState(false),[volume,setVolume]=useState(50),[blocked,setBlocked]=useState(false);
  const audio=useRef({ctx:null,gain:null,timer:null,step:0});
- useEffect(()=>{try{if(sessionStorage.getItem('pmv2-intro-seen'))return;}catch{}setVisible(true);document.documentElement.classList.add('introLocked');return()=>{document.documentElement.classList.remove('introLocked');stopMusic(true)}},[]);
+ useEffect(()=>{try{if(sessionStorage.getItem('pmv2-intro-v2-seen'))return;}catch{}setVisible(true);document.documentElement.classList.add('introLocked');return()=>{document.documentElement.classList.remove('introLocked');stopMusic(true)}},[]);
  useEffect(()=>{if(audio.current.gain)audio.current.gain.gain.value=muted?0:(volume/100)*.22},[volume,muted]);
  const hit=(ctx,out,type,freq,when,dur=.09,level=.35)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(freq,when);g.gain.setValueAtTime(level,when);g.gain.exponentialRampToValueAtTime(.001,when+dur);o.connect(g).connect(out);o.start(when);o.stop(when+dur+.02)};
  const noise=(ctx,out,when,dur=.035,level=.11)=>{const b=ctx.createBuffer(1,Math.max(1,ctx.sampleRate*dur),ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=b;f.type='highpass';f.frequency.value=6500;g.gain.setValueAtTime(level,when);g.gain.exponentialRampToValueAtTime(.001,when+dur);s.connect(f).connect(g).connect(out);s.start(when)};
@@ -13,7 +13,7 @@ export default function StoreIntro(){
  const stopMusic=(close=false)=>{const a=audio.current;if(a.timer){clearInterval(a.timer);a.timer=null}if(a.ctx){if(close){a.ctx.close().catch(()=>{});a.ctx=null;a.gain=null}else a.ctx.suspend().catch(()=>{})}setPlaying(false)};
  useEffect(()=>{if(!visible)return;const id=setTimeout(()=>startMusic(),180);return()=>clearTimeout(id)},[visible]);
  const togglePlay=()=>playing?stopMusic(false):startMusic();
- const enter=()=>{if(entering)return;setEntering(true);try{sessionStorage.setItem('pmv2-intro-seen','1')}catch{}setTimeout(()=>{stopMusic(true);setVisible(false);document.documentElement.classList.remove('introLocked')},2050)};
+ const enter=()=>{if(entering)return;setEntering(true);try{sessionStorage.setItem('pmv2-intro-v2-seen','1')}catch{}setTimeout(()=>{stopMusic(true);setVisible(false);document.documentElement.classList.remove('introLocked')},2050)};
  if(!visible)return null;
  return <div className={entering?'storeIntro introV2 entering':'storeIntro introV2'} aria-modal="true" role="dialog">
   <div className="introGlow"/>
