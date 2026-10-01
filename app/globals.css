@@ -963,3 +963,26 @@ radial-gradient(ellipse at 98% 0,#7210ac 0 51%,transparent 53%)}
  .confirmationTop,.confirmationMeta{align-items:flex-start;flex-direction:column}
  .confirmationItems article{grid-template-columns:1fr;gap:8px}
 }
+
+
+/* ===== Owner finance dashboard v2 ===== */
+.financeCards{grid-template-columns:repeat(3,1fr)}
+.orderToolbar{display:grid;grid-template-columns:minmax(220px,1fr) 180px auto;gap:10px;margin:0 0 14px}
+.orderToolbar input,.orderToolbar select,.orderToolbar button{
+  height:42px;border:1px solid #3c2946;border-radius:9px;background:#0a080d;color:#fff;padding:0 12px;outline:0;
+}
+.orderToolbar input:focus,.orderToolbar select:focus{border-color:#c447ec;box-shadow:0 0 0 3px rgba(196,71,236,.08)}
+.orderToolbar button{font-size:10px;font-weight:900;letter-spacing:.1em;cursor:pointer}
+.orderMoney{display:grid!important;justify-items:end;gap:4px}
+.orderMoney small{color:#8e8596!important}
+.orderActions{display:flex;gap:8px;align-items:center}
+.refundButton{
+  height:38px;padding:0 12px;border:1px solid #7c2d45;border-radius:8px;background:#17090f;color:#ff8ba4;
+  font-size:9px;font-weight:900;letter-spacing:.08em;cursor:pointer;
+}
+.refundButton:hover:not(:disabled){border-color:#ff6487;background:#220c15}
+.refundButton:disabled{opacity:.45;cursor:not-allowed}
+.refundedOrder{opacity:.78}
+.refundedOrder .orderMain strong{text-decoration:line-through;color:#8d8492}
+@media(max-width:850px){.financeCards{grid-template-columns:1fr 1fr}.orderToolbar{grid-template-columns:1fr 1fr}.orderToolbar button{grid-column:1/-1}}
+@media(max-width:600px){.financeCards{grid-template-columns:1fr}.orderToolbar{grid-template-columns:1fr}.orderToolbar button{grid-column:auto}.orderActions{width:100%;flex-direction:column}.orderActions select,.orderActions button{width:100%}.orderMoney{justify-items:start}}
