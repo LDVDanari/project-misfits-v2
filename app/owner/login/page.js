@@ -1,0 +1,1 @@
+import OwnerLogin from '../../../components/OwnerLogin';export const metadata={title:'Owner Login',robots:{index:false,follow:false}};export default function Page(){return <main className="inner ownerLoginPage"><OwnerLogin/></main>}
