@@ -1,0 +1,2 @@
+import Link from 'next/link';
+export default function Nav(){return <header className="nav"><Link href="/" className="brand">PM<span>v2</span></Link><nav><Link href="/">HOME</Link><Link href="/store">STORE</Link><Link href="/store#coins">MISFIT COINS</Link><Link href="/store#priority">PRIORITY</Link><Link href="/city-info">CITY INFO</Link><Link href="/rules">RULES</Link></nav><a className="discord" href="#community">DISCORD</a></header>}
