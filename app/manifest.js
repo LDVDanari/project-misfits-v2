@@ -1,1 +1,1 @@
-export default function manifest(){return{name:'Project Misfits v2',short_name:'PMv2',description:'Your Story. Your Choices. Your Legacy.',start_url:'/',display:'standalone',background_color:'#050407',theme_color:'#0b0710'}}
+export default function manifest(){return{name:'Project Misfits v2',short_name:'PMv2',description:'Your Story. Your Choices. Your Legacy. A story-first FiveM roleplay community.',start_url:'/',display:'standalone',background_color:'#050407',theme_color:'#0b0710',categories:['entertainment','games','social']}}
