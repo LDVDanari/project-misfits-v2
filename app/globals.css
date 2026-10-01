@@ -896,3 +896,20 @@ radial-gradient(ellipse at 98% 0,#7210ac 0 51%,transparent 53%)}
 }
 .ownerLoginCard input:focus{border-color:#c743ef;box-shadow:0 0 0 3px rgba(199,67,239,.08)}
 .ownerLoginCard .primary{width:100%;margin-top:4px}
+
+
+/* ===== Owner nav button ===== */
+.navActions{display:flex;align-items:center;gap:10px}
+.ownerButton{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:42px;padding:0 16px;
+  border:1px solid rgba(208,58,255,.52);
+  border-radius:8px;
+  background:linear-gradient(180deg,#14091c,#0b0710);
+  color:#f4eaff!important;
+  font-size:11px;font-weight:900;letter-spacing:.12em;text-decoration:none;
+  box-shadow:0 0 20px rgba(191,40,238,.08);
+  transition:.18s ease;
+}
+.ownerButton:hover{border-color:#dc5cff;background:#1c0b27;transform:translateY(-1px);box-shadow:0 0 24px rgba(199,43,245,.14)}
+@media(max-width:900px){.desktopOwner{display:none}.navActions{display:block}}
