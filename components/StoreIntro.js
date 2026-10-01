@@ -22,7 +22,7 @@ export default function StoreIntro(){
     <button onClick={togglePlay}>{playing?'❚❚':'▶'}</button>
     <button onClick={()=>setMuted(v=>!v)}>{muted?'MUTED':'SOUND'}</button>
     <label><span>VOLUME</span><input aria-label="Intro music volume" type="range" min="0" max="100" value={volume} onChange={e=>setVolume(Number(e.target.value))}/><b>{volume}</b></label>
-   </div>:<div className="introTrackPending">MUSIC SLOT READY • TRACK NOT CONNECTED</div>}
+   </div>:null}
   </div>
   <div className="purplePour"><i/><i/><i/><i/></div>
  </div>
