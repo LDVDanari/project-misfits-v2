@@ -1,4 +1,4 @@
-import {NextResponse} from 'next/server';import {buildCheckoutItems,stripeRequest,stripeReady} from '../../../lib/stripeServer';
+import {NextResponse} from 'next/server';import {priceToCents,stripeRequest,stripeReady} from '../../../lib/stripeServer';import {getResolvedCatalog} from '../../../lib/catalogServer';
 export const runtime='nodejs';
 function publicOrigin(req){
   const env=(process.env.NEXT_PUBLIC_SITE_URL||'').trim().replace(/\/$/,'');
@@ -11,7 +11,14 @@ function publicOrigin(req){
 export async function POST(req){try{
   if(!stripeReady())return NextResponse.json({error:'Checkout is not configured yet.'},{status:503});
   const {items}=await req.json();
-  const rows=buildCheckoutItems(items);
+  const catalog=await getResolvedCatalog();
+  if(!Array.isArray(items)||!items.length)return NextResponse.json({error:'Cart is empty.'},{status:400});
+  const rows=items.map(row=>{
+    const product=catalog.find(p=>p.slug===row.slug);
+    if(!product||!product.active||product.price==='COMING SOON')throw new Error('One or more store items are unavailable.');
+    const qty=Math.max(1,Math.min(10,Number(row.qty)||1));
+    return{product,qty,unit_amount:priceToCents(product.price)};
+  });
   const origin=publicOrigin(req);
   let taxCode=process.env.STRIPE_TAX_CODE||'';
   if(!taxCode){try{const taxSettings=await stripeRequest('/tax/settings');taxCode=taxSettings?.defaults?.tax_code||'';}catch{}}
