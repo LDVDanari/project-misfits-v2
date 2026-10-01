@@ -1,0 +1,1 @@
+import {products,coins,priorities} from '../../../lib/products';export async function GET(){return Response.json({packages:products,coins,priorities},{headers:{'Cache-Control':'public, max-age=60, stale-while-revalidate=300'}})}

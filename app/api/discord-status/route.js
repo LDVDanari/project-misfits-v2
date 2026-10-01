@@ -1,0 +1,3 @@
+const INVITE=process.env.DISCORD_INVITE_CODE||'hHrSekGueH';
+export const dynamic='force-dynamic';
+export async function GET(){try{const r=await fetch('https://discord.com/api/v10/invites/'+INVITE+'?with_counts=true',{cache:'no-store'});if(!r.ok)throw new Error('Discord unavailable');const d=await r.json();return Response.json({ok:true,name:d?.guild?.name||'Project Misfits v2',members:d?.approximate_member_count||null,online:d?.approximate_presence_count||null});}catch{return Response.json({ok:false,name:'Project Misfits v2',members:null,online:null},{status:200});}}

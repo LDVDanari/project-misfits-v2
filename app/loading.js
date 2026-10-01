@@ -1,0 +1,1 @@
+export default function Loading(){return <main className="inner loadingPage"><div className="loadingMark">PM<span>v2</span></div><div className="loadingLine"/><p>LOADING PROJECT MISFITS…</p></main>}
