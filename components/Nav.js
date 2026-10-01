@@ -1,3 +1,3 @@
-import Link from 'next/link';
+import Link from 'next/link';import MobileNav from './MobileNav';
 const DISCORD='https://discord.gg/hHrSekGueH';
-export default function Nav(){return <header className="nav"><Link href="/" className="brand">PM<span>v2</span></Link><nav><Link href="/">HOME</Link><Link href="/store">STORE</Link><Link href="/store#coins">MISFIT COINS</Link><Link href="/store#priority">PRIORITY</Link><Link href="/city-info">CITY INFO</Link><Link href="/rules">RULES</Link></nav><a className="discord" href={DISCORD} target="_blank" rel="noreferrer">DISCORD</a></header>}
+export default function Nav(){return <header className="nav"><Link href="/" className="brand">PM<span>v2</span></Link><nav><Link href="/">HOME</Link><Link href="/store">STORE</Link><Link href="/store#coins">MISFIT COINS</Link><Link href="/store#priority">PRIORITY</Link><Link href="/city-info">CITY INFO</Link><Link href="/rules">RULES</Link><Link href="/changelog">CHANGELOG</Link></nav><a className="discord desktopDiscord" href={DISCORD} target="_blank" rel="noreferrer">DISCORD</a><MobileNav/></header>
