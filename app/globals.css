@@ -275,3 +275,76 @@ radial-gradient(ellipse at 98% 0,#7210ac 0 51%,transparent 53%)}
 @keyframes introPour{0%{transform:translateY(0)}57%{transform:translateY(100%)}72%{transform:translateY(100%)}100%{transform:translateY(210%)}}
 @media(max-width:600px){.introLogoButton{width:min(82vw,390px)}.introAudioControls{flex-wrap:wrap}.introAudioControls label{width:100%;justify-content:center}.introAudioControls input{width:min(42vw,150px)}.introCenter{padding-left:16px;padding-right:16px}}
 @media(prefers-reduced-motion:reduce){.introGlow{animation:none}.storeIntro.entering .introLogoButton img{animation:none;opacity:0}.storeIntro.entering .purplePour{animation:introPour .8s linear forwards}}
+
+
+/* ===== Intro v2 polish: cleaner emblem, real fluid-style wipe, built-in audio ===== */
+.introV2 .introCenter{width:min(94vw,900px);padding-top:18px}
+.introV2 .introLogoButton{
+  width:min(72vw,610px);
+  margin-bottom:8px;
+  filter:drop-shadow(0 28px 42px rgba(0,0,0,.72)) drop-shadow(0 0 36px rgba(183,54,255,.18));
+}
+.introV2 .introLogoButton img{
+  width:100%;
+  border-radius:0;
+  box-shadow:none;
+  transform:scale(1.02);
+  filter:contrast(1.06) saturate(1.08) brightness(1.02);
+  -webkit-mask-image:radial-gradient(ellipse 71% 68% at 50% 49%,#000 54%,rgba(0,0,0,.97) 62%,rgba(0,0,0,.72) 72%,transparent 94%);
+  mask-image:radial-gradient(ellipse 71% 68% at 50% 49%,#000 54%,rgba(0,0,0,.97) 62%,rgba(0,0,0,.72) 72%,transparent 94%);
+}
+.introV2 .introLogoButton:hover img{transform:scale(1.055);filter:contrast(1.08) saturate(1.12) brightness(1.08)}
+.introV2 .introEyebrow{margin-top:-4px;color:#d26aff;text-shadow:0 0 20px rgba(191,59,255,.4)}
+.introV2 .introCenter h1{font-size:clamp(30px,4.3vw,56px)}
+.introV2 .introAudioControls{position:relative;z-index:12}
+.audioHint{display:block;margin-top:10px;color:#8f8498;font-size:9px;font-weight:800;letter-spacing:.08em}
+
+.liquidPour{
+  position:absolute;
+  z-index:20;
+  inset:-10vh -4vw auto -4vw;
+  width:108vw;
+  height:150vh;
+  pointer-events:none;
+  overflow:visible;
+  opacity:0;
+  transform:translateY(-112%);
+  filter:drop-shadow(0 28px 38px rgba(79,0,113,.48));
+}
+.liquidMass{transform-origin:center top}
+.storeIntro.entering .liquidPour{
+  opacity:1;
+  animation:pmvLiquidFall 2s cubic-bezier(.58,.02,.18,1) forwards;
+}
+.storeIntro.entering .liquidMass{animation:pmvLiquidSlosh .54s ease-in-out infinite alternate}
+.storeIntro.entering .introLogoButton img{animation:introLogoSpinV2 .92s cubic-bezier(.16,.84,.23,1) forwards}
+.storeIntro.entering .introCenter h1,
+.storeIntro.entering .introCenter p,
+.storeIntro.entering .introEyebrow,
+.storeIntro.entering .introAudioControls,
+.storeIntro.entering .audioHint{animation:introTextOut .32s ease forwards}
+@keyframes pmvLiquidFall{
+  0%{transform:translateY(-112%) scaleY(.98);opacity:0}
+  6%{opacity:1}
+  55%{transform:translateY(-8%) scaleY(1.02)}
+  70%{transform:translateY(2%) scaleY(1)}
+  100%{transform:translateY(112%) scaleY(1.03)}
+}
+@keyframes pmvLiquidSlosh{
+  from{transform:translateX(-7px) skewX(-.3deg)}
+  to{transform:translateX(8px) skewX(.35deg)}
+}
+@keyframes introLogoSpinV2{
+  0%{transform:rotate(0) scale(1.02);opacity:1;filter:contrast(1.06) saturate(1.08)}
+  45%{transform:rotate(360deg) scale(1.14);opacity:1;filter:brightness(1.22) saturate(1.25)}
+  100%{transform:rotate(720deg) scale(.74);opacity:0;filter:brightness(1.4) blur(2px)}
+}
+@media(max-width:600px){
+  .introV2 .introLogoButton{width:min(96vw,520px);margin-bottom:4px}
+  .introV2 .introCenter{padding-top:8px}
+  .liquidPour{left:-12vw;width:124vw}
+}
+@media(prefers-reduced-motion:reduce){
+  .storeIntro.entering .liquidPour{animation:pmvLiquidFall .85s linear forwards}
+  .storeIntro.entering .liquidMass{animation:none}
+}
