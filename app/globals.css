@@ -929,3 +929,37 @@ radial-gradient(ellipse at 98% 0,#7210ac 0 51%,transparent 53%)}
 .orderFoot select{min-width:140px;height:38px;padding:0 10px;border:1px solid #553165;border-radius:8px;background:#0d0911;color:#fff;font-size:10px;font-weight:900;letter-spacing:.08em}
 .emptyOrders{color:#817889}
 @media(max-width:650px){.orderMain,.orderFoot{align-items:flex-start;flex-direction:column}.orderFoot select{width:100%}}
+
+
+/* ===== Verified checkout confirmation ===== */
+.orderConfirmation{max-width:900px;padding-top:70px;padding-bottom:90px}
+.successMark.fail{color:#ff6e8e;border-color:#7b2942;background:#17080e;box-shadow:0 0 34px rgba(255,56,108,.12)}
+.confirmationCard{
+  width:100%;margin:30px auto 22px;text-align:left;border:1px solid #3a2843;border-radius:16px;
+  background:linear-gradient(155deg,#0f0a13,#08070a);overflow:hidden;
+  box-shadow:0 25px 65px rgba(0,0,0,.38);
+}
+.confirmationTop,.confirmationMeta{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:20px 22px;border-bottom:1px solid #2d2133}
+.confirmationTop div{display:grid;gap:6px;min-width:0}
+.confirmationTop small,.confirmationMeta small{display:block;color:#8f8599;font-size:9px;font-weight:900;letter-spacing:.12em}
+.confirmationTop code{color:#d3c8da;font-size:10px;word-break:break-all}
+.confirmationTop button{flex:0 0 auto;border:1px solid #573067;border-radius:8px;background:#120918;color:#fff;padding:10px 13px;font-size:9px;font-weight:900;letter-spacing:.08em;cursor:pointer}
+.confirmationTop button:hover{border-color:#d14ef4;background:#1b0c24}
+.confirmationMeta span{display:grid;gap:6px}
+.confirmationMeta b{font-size:15px;color:#fff}
+.confirmationItems{padding:0 22px}
+.confirmationItems article{display:grid;grid-template-columns:minmax(180px,.8fr) 1.2fr;gap:24px;padding:18px 0;border-bottom:1px solid #251b2b}
+.confirmationItems article:last-child{border-bottom:0}
+.confirmationItems article div{display:grid;gap:5px}
+.confirmationItems article small{color:#b13fd1;font-size:9px;font-weight:900;letter-spacing:.1em}
+.confirmationItems article p{margin:0;color:#a9a1b0;line-height:1.55;font-size:12px}
+.fulfillmentBox{
+  width:100%;margin:0 auto 24px;padding:24px;text-align:left;border:1px solid #5d2f70;border-radius:15px;
+  background:radial-gradient(circle at 10% 0,rgba(126,35,170,.18),transparent 40%),#0a0810;
+}
+.fulfillmentBox h2{margin:7px 0 8px;font-size:27px}
+.fulfillmentBox p{margin:0 0 18px;color:#aea5b5;line-height:1.65}
+@media(max-width:650px){
+ .confirmationTop,.confirmationMeta{align-items:flex-start;flex-direction:column}
+ .confirmationItems article{grid-template-columns:1fr;gap:8px}
+}
