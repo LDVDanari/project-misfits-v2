@@ -1,0 +1,3 @@
+import {NextResponse} from 'next/server';
+export function middleware(request){const user=process.env.ADMIN_USERNAME;const pass=process.env.ADMIN_PASSWORD;if(!user||!pass)return new NextResponse('Not Found',{status:404});const auth=request.headers.get('authorization')||'';if(!auth.startsWith('Basic '))return new NextResponse('Authentication required',{status:401,headers:{'WWW-Authenticate':'Basic realm="PMv2 Admin"'}});try{const decoded=atob(auth.slice(6));const split=decoded.indexOf(':');const u=decoded.slice(0,split);const p=decoded.slice(split+1);if(u===user&&p===pass)return NextResponse.next();}catch{}return new NextResponse('Unauthorized',{status:401,headers:{'WWW-Authenticate':'Basic realm="PMv2 Admin"'}})}
+export const config={matcher:['/admin/:path*']};
