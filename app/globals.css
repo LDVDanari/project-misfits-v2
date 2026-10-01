@@ -225,3 +225,53 @@ button,input{font:inherit}a,button{transition:color .2s,border-color .2s,backgro
   .stats .heroStat{border-right:0!important;border-bottom:1px solid rgba(96,67,110,.34)!important}
   .stats .heroStat:last-child{border-bottom:0!important}
 }
+
+
+/* ===== Cinematic PMv2 store intro ===== */
+html.introLocked,html.introLocked body{overflow:hidden}
+.storeIntro{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;overflow:hidden;background:
+radial-gradient(circle at 50% 38%,rgba(147,25,224,.2),transparent 26%),
+radial-gradient(circle at 50% 55%,rgba(69,13,95,.22),transparent 48%),
+linear-gradient(180deg,#050306 0%,#09040d 58%,#020203 100%);color:#fff}
+.storeIntro:before{content:"";position:absolute;inset:0;background:
+linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(to bottom,transparent,#000 32%,#000 70%,transparent);opacity:.45}
+.introGlow{position:absolute;width:min(62vw,720px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(189,56,255,.17),rgba(91,21,129,.04) 46%,transparent 70%);filter:blur(10px);animation:introPulse 3.2s ease-in-out infinite}
+.introCenter{position:relative;z-index:3;width:min(92vw,760px);text-align:center;padding:34px 22px}
+.introLogoButton{display:block;width:min(62vw,440px);margin:0 auto 22px;padding:0;border:0;background:none;cursor:pointer;filter:drop-shadow(0 24px 50px rgba(0,0,0,.65))}
+.introLogoButton img{display:block;width:100%;height:auto;border-radius:26px;box-shadow:0 0 0 1px rgba(190,67,255,.08),0 0 70px rgba(174,38,255,.22);transition:transform .3s,filter .3s}
+.introLogoButton:hover img{transform:scale(1.035);filter:brightness(1.08) saturate(1.08)}
+.introEyebrow{font-size:10px;font-weight:900;letter-spacing:.34em;color:#c84bff;margin-bottom:10px}
+.introCenter h1{margin:0;font-size:clamp(28px,4.1vw,52px);line-height:1;letter-spacing:-.04em;text-shadow:0 5px 30px #000}
+.introCenter p{margin:13px 0 0;color:#b9b0c0;font-size:13px;font-weight:800;letter-spacing:.08em}
+.introAudioControls{display:flex;justify-content:center;align-items:center;gap:9px;margin:26px auto 0;padding:9px 10px;width:fit-content;max-width:100%;border:1px solid rgba(146,69,174,.35);border-radius:13px;background:rgba(7,5,10,.72);backdrop-filter:blur(14px);box-shadow:0 12px 35px rgba(0,0,0,.3)}
+.introAudioControls>button{height:38px;min-width:48px;border:1px solid rgba(165,69,213,.34);border-radius:8px;background:#0e0a13;color:#f4eef8;font-size:10px;font-weight:900;letter-spacing:.08em;cursor:pointer}
+.introAudioControls>button:hover{border-color:#bd3fff;background:#180d20}
+.introAudioControls label{height:38px;display:flex;align-items:center;gap:9px;padding:0 10px}
+.introAudioControls label span{font-size:9px;font-weight:900;letter-spacing:.13em;color:#8e8594}
+.introAudioControls input{width:130px;accent-color:#b83cff}
+.introAudioControls label b{width:24px;text-align:right;color:#d1c7d8;font-size:10px}
+.introTrackPending{display:inline-block;margin-top:24px;padding:10px 14px;border:1px solid rgba(157,65,193,.22);border-radius:999px;color:#7e7484;background:rgba(10,7,13,.5);font-size:9px;font-weight:900;letter-spacing:.14em}
+.purplePour{position:absolute;z-index:8;left:-6%;top:-118%;width:112%;height:118%;pointer-events:none;background:
+radial-gradient(circle at 18% 80%,rgba(218,76,255,.95) 0 3%,transparent 3.5%),
+radial-gradient(circle at 72% 90%,rgba(160,36,224,.9) 0 4%,transparent 4.5%),
+linear-gradient(180deg,#2c0341 0%,#6d0d9f 36%,#b423ef 72%,#7210ac 100%);
+filter:saturate(1.2);box-shadow:0 22px 70px rgba(174,30,255,.44)}
+.purplePour:after{content:"";position:absolute;left:0;right:0;bottom:-56px;height:90px;background:
+radial-gradient(ellipse at 8% 0,#7210ac 0 42%,transparent 44%),
+radial-gradient(ellipse at 24% 0,#8d16c3 0 50%,transparent 52%),
+radial-gradient(ellipse at 43% 0,#b423ef 0 40%,transparent 42%),
+radial-gradient(ellipse at 63% 0,#7e10b7 0 52%,transparent 54%),
+radial-gradient(ellipse at 83% 0,#9f1ad4 0 43%,transparent 45%),
+radial-gradient(ellipse at 98% 0,#7210ac 0 51%,transparent 53%)}
+.purplePour i{position:absolute;bottom:-40px;width:20px;height:80px;border-radius:0 0 50% 50%;background:linear-gradient(#9f1ad4,#5b087d);filter:drop-shadow(0 12px 12px rgba(117,14,166,.35))}
+.purplePour i:nth-child(1){left:14%;height:110px}.purplePour i:nth-child(2){left:38%;height:70px}.purplePour i:nth-child(3){left:67%;height:130px}.purplePour i:nth-child(4){left:88%;height:86px}
+.storeIntro.entering .introLogoButton img{animation:introLogoSpin .95s cubic-bezier(.2,.75,.2,1) forwards}
+.storeIntro.entering .introCenter h1,.storeIntro.entering .introCenter p,.storeIntro.entering .introEyebrow,.storeIntro.entering .introAudioControls,.storeIntro.entering .introTrackPending{animation:introTextOut .42s ease forwards}
+.storeIntro.entering .purplePour{animation:introPour 1.55s cubic-bezier(.72,.01,.22,.99) forwards}
+@keyframes introPulse{0%,100%{transform:scale(.9);opacity:.6}50%{transform:scale(1.08);opacity:1}}
+@keyframes introLogoSpin{0%{transform:rotate(0) scale(1)}55%{transform:rotate(390deg) scale(1.12)}100%{transform:rotate(720deg) scale(.82);opacity:.15}}
+@keyframes introTextOut{to{opacity:0;transform:translateY(10px)}}
+@keyframes introPour{0%{transform:translateY(0)}57%{transform:translateY(100%)}72%{transform:translateY(100%)}100%{transform:translateY(210%)}}
+@media(max-width:600px){.introLogoButton{width:min(82vw,390px)}.introAudioControls{flex-wrap:wrap}.introAudioControls label{width:100%;justify-content:center}.introAudioControls input{width:min(42vw,150px)}.introCenter{padding-left:16px;padding-right:16px}}
+@media(prefers-reduced-motion:reduce){.introGlow{animation:none}.storeIntro.entering .introLogoButton img{animation:none;opacity:0}.storeIntro.entering .purplePour{animation:introPour .8s linear forwards}}
