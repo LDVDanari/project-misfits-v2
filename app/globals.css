@@ -913,3 +913,19 @@ radial-gradient(ellipse at 98% 0,#7210ac 0 51%,transparent 53%)}
 }
 .ownerButton:hover{border-color:#dc5cff;background:#1c0b27;transform:translateY(-1px);box-shadow:0 0 24px rgba(199,43,245,.14)}
 @media(max-width:900px){.desktopOwner{display:none}.navActions{display:block}}
+
+
+/* ===== Owner order tracking ===== */
+.orderHistory{margin-top:44px}
+.sectionTitle.compact{margin-bottom:18px}
+.ownerOrder{padding:18px 0;border-top:1px solid #2e2235}
+.orderMain,.orderFoot{display:flex;justify-content:space-between;gap:18px;align-items:center}
+.orderMain div{display:grid;gap:5px}
+.orderMain small{color:#817889;font-size:10px}
+.orderMain strong{font-size:18px;color:#fff}
+.orderItems{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.orderItems span{padding:7px 9px;border:1px solid #35273e;border-radius:999px;background:#0b0910;color:#c7becd;font-size:10px}
+.orderFoot code{color:#6f6874;font-size:9px;word-break:break-all}
+.orderFoot select{min-width:140px;height:38px;padding:0 10px;border:1px solid #553165;border-radius:8px;background:#0d0911;color:#fff;font-size:10px;font-weight:900;letter-spacing:.08em}
+.emptyOrders{color:#817889}
+@media(max-width:650px){.orderMain,.orderFoot{align-items:flex-start;flex-direction:column}.orderFoot select{width:100%}}
