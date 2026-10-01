@@ -872,3 +872,27 @@ radial-gradient(ellipse at 98% 0,#7210ac 0 51%,transparent 53%)}
  .withdrawControls{align-items:stretch;flex-direction:column}
  .withdrawControls label,.withdrawControls input{width:100%}
 }
+
+
+/* ===== Owner login ===== */
+.ownerLoginPage{min-height:calc(100vh - 76px);display:grid;place-items:center;padding-top:110px;padding-bottom:70px}
+.ownerLoginCard{
+  width:min(100%,520px);
+  display:grid;
+  gap:18px;
+  padding:34px;
+  border:1px solid rgba(179,63,226,.46);
+  border-radius:18px;
+  background:radial-gradient(circle at 10% 0,rgba(131,35,174,.18),transparent 38%),linear-gradient(155deg,#0f0a13,#070609);
+  box-shadow:0 28px 80px rgba(0,0,0,.48),0 0 32px rgba(170,39,218,.08);
+}
+.ownerLoginCard h1{margin:0;font-size:42px;letter-spacing:-.045em}
+.ownerLoginCard h1 span{color:#cf3cff}
+.ownerLoginCard p{margin:0 0 4px;color:#a9a1b0;line-height:1.65}
+.ownerLoginCard label{display:grid;gap:8px;color:#9c92a5;font-size:10px;font-weight:900;letter-spacing:.12em}
+.ownerLoginCard input{
+  width:100%;height:48px;padding:0 14px;border:1px solid #3f2b49;border-radius:10px;
+  background:#09070c;color:#fff;outline:0;font-size:15px;
+}
+.ownerLoginCard input:focus{border-color:#c743ef;box-shadow:0 0 0 3px rgba(199,67,239,.08)}
+.ownerLoginCard .primary{width:100%;margin-top:4px}
