@@ -1,0 +1,1 @@
+import CheckoutSuccess from '../../../components/CheckoutSuccess';export const metadata={title:'Payment Received',robots:{index:false,follow:false}};export default function Success(){return <main className="inner"><CheckoutSuccess/></main>}
