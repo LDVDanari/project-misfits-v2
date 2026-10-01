@@ -1,0 +1,2 @@
+'use client';import {useEffect} from 'react';import Link from 'next/link';import {useCart} from './CartProvider';
+export default function CheckoutSuccess(){const c=useCart();useEffect(()=>{c?.clear?.()},[]);return <div className="checkoutSuccess"><div className="successMark">✓</div><h1>PAYMENT <span>RECEIVED.</span></h1><p>Your payment was submitted successfully. Keep your receipt for support and fulfillment.</p><div className="actions"><Link className="primary" href="/store">BACK TO STORE</Link><Link className="gold" href="/">HOME</Link></div></div>}
