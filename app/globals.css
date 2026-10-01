@@ -671,3 +671,79 @@ radial-gradient(ellipse at 98% 0,#7210ac 0 51%,transparent 53%)}
 @media(prefers-reduced-motion:reduce){
   .introV6.entering .introV6LogoClone{animation:none;opacity:0}
 }
+
+
+/* ===== Intro v7: exact approved artwork ===== */
+.introV7{
+  background:#000;
+  overflow:hidden;
+}
+.introV7:before,.introV7:after{display:none!important}
+.introV7YT{position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;border:0;opacity:.001}
+.introV7Artwork{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+.introV7LogoHit{
+  position:absolute;
+  z-index:8;
+  left:50%;
+  top:35%;
+  width:min(45vw,760px);
+  height:min(48vh,520px);
+  transform:translate(-50%,-50%);
+  border:0;
+  background:transparent;
+  cursor:pointer;
+  border-radius:50%;
+}
+.introV7ContinueHit{
+  position:absolute;
+  z-index:8;
+  left:50%;
+  top:78%;
+  width:min(46vw,700px);
+  height:8vh;
+  transform:translate(-50%,-50%);
+  border:0;
+  background:transparent;
+  cursor:pointer;
+}
+.introV7Controls{
+  position:absolute;
+  z-index:10;
+  left:50%;
+  bottom:4.6%;
+  transform:translateX(-50%);
+  width:min(25vw,420px);
+  height:58px;
+  pointer-events:none;
+}
+.introV7Controls button,.introV7Controls input{position:absolute;pointer-events:auto;opacity:0;cursor:pointer}
+.introV7Play{left:0;top:0;width:58px;height:58px}
+.introV7Mute{left:64px;top:0;width:58px;height:58px}
+.introV7Volume{left:132px;top:13px;width:calc(100% - 132px);height:32px}
+.introV7.entering .introV7Artwork{animation:introV7Fade .32s ease .3s forwards}
+@keyframes introV7Fade{to{filter:brightness(.92) saturate(1.05)}}
+@media(max-width:1000px){
+  .introV7Artwork{object-fit:cover}
+  .introV7LogoHit{width:72vw;height:44vh}
+  .introV7ContinueHit{top:77%;width:72vw}
+  .introV7Controls{width:min(44vw,410px);bottom:4.4%}
+}
+@media(max-width:650px){
+  .introV7Artwork{object-fit:cover;object-position:center}
+  .introV7LogoHit{top:34%;width:94vw;height:40vh}
+  .introV7ContinueHit{top:73%;width:88vw;height:7vh}
+  .introV7Controls{width:62vw;bottom:3.5%;height:48px}
+  .introV7Play,.introV7Mute{width:48px;height:48px}
+  .introV7Mute{left:52px}
+  .introV7Volume{left:110px;top:8px;width:calc(100% - 110px)}
+}
