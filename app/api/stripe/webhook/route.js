@@ -1,0 +1,3 @@
+import {NextResponse} from 'next/server';import {verifyStripeSignature} from '../../../../lib/stripeServer';
+export const runtime='nodejs';
+export async function POST(req){const raw=await req.text();const sig=req.headers.get('stripe-signature');const secret=process.env.STRIPE_WEBHOOK_SECRET;if(!secret)return NextResponse.json({error:'Webhook not configured'},{status:503});if(!verifyStripeSignature(raw,sig,secret))return NextResponse.json({error:'Invalid signature'},{status:400});const event=JSON.parse(raw);if(event.type==='checkout.session.completed'){console.log('PMv2 paid checkout',event.data?.object?.id)}return NextResponse.json({received:true})}
