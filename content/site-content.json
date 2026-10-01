@@ -1,0 +1,19 @@
+{
+  "announcement": {
+    "enabled": true,
+    "title": "PMv2 Website v2",
+    "body": "The new Project Misfits website, live city integrations and storefront experience are in active development."
+  },
+  "changelog": [
+    {
+      "date": "OCT 2026",
+      "title": "PMv2 Website v2",
+      "body": "Live city status, Discord integration, storefront upgrades, mobile navigation, cart support, applications, searchable rules and production hardening are being built."
+    },
+    {
+      "date": "SEP 2026",
+      "title": "Beta Foundation",
+      "body": "Project Misfits v2 community, city systems and story-first foundation entered active development."
+    }
+  ]
+}
