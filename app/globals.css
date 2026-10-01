@@ -348,3 +348,158 @@ radial-gradient(ellipse at 98% 0,#7210ac 0 51%,transparent 53%)}
   .storeIntro.entering .liquidPour{animation:pmvLiquidFall .85s linear forwards}
   .storeIntro.entering .liquidMass{animation:none}
 }
+
+
+/* ===== Intro v3: premium splash + syrupy lean wipe ===== */
+.introV3{
+  background:
+    radial-gradient(circle at 50% 42%,rgba(100,16,139,.16),transparent 24%),
+    radial-gradient(circle at 50% 52%,rgba(48,6,70,.22),transparent 50%),
+    #020203;
+}
+.introV3:before{
+  background:
+    radial-gradient(circle at center,transparent 0 42%,rgba(0,0,0,.48) 78%,rgba(0,0,0,.88) 100%);
+  opacity:1;
+  mask-image:none;
+}
+.introV3Aura{
+  position:absolute;
+  width:min(68vw,660px);
+  aspect-ratio:1;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(166,28,224,.16),rgba(101,10,144,.055) 42%,transparent 72%);
+  filter:blur(18px);
+  animation:introPulse 3.8s ease-in-out infinite;
+}
+.introV3Center{
+  position:relative;
+  z-index:5;
+  width:min(94vw,720px);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+}
+.introV3Logo{
+  width:min(68vw,470px);
+  margin:0 auto 12px;
+  padding:0;
+  border:0;
+  background:none;
+  cursor:pointer;
+  filter:drop-shadow(0 25px 42px rgba(0,0,0,.72)) drop-shadow(0 0 32px rgba(174,43,236,.16));
+}
+.introV3Logo img{
+  display:block;
+  width:100%;
+  height:auto;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  mix-blend-mode:screen;
+  filter:contrast(1.08) saturate(1.14) brightness(1.04);
+  -webkit-mask-image:radial-gradient(ellipse 60% 61% at 50% 51%,#000 0 56%,rgba(0,0,0,.97) 66%,rgba(0,0,0,.62) 78%,transparent 96%);
+  mask-image:radial-gradient(ellipse 60% 61% at 50% 51%,#000 0 56%,rgba(0,0,0,.97) 66%,rgba(0,0,0,.62) 78%,transparent 96%);
+  transition:transform .28s ease,filter .28s ease;
+}
+.introV3Logo:hover img{transform:scale(1.025);filter:contrast(1.1) saturate(1.2) brightness(1.09)}
+.introV3Welcome{
+  margin-top:-2px;
+  color:#f7f4f9;
+  font-size:clamp(18px,2vw,27px);
+  font-weight:900;
+  letter-spacing:-.02em;
+  text-shadow:0 5px 28px rgba(0,0,0,.9);
+}
+.introV3Continue{
+  margin-top:8px;
+  padding:0;
+  border:0;
+  background:none;
+  color:#9d91a5;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.18em;
+  cursor:pointer;
+}
+.introV3Continue:hover{color:#d061ff}
+.introV3Audio{
+  position:absolute;
+  z-index:8;
+  left:50%;
+  bottom:24px;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 9px;
+  border:1px solid rgba(132,57,158,.28);
+  border-radius:999px;
+  background:rgba(8,5,10,.48);
+  backdrop-filter:blur(16px);
+  box-shadow:0 12px 35px rgba(0,0,0,.28);
+}
+.introV3Audio button{
+  min-width:42px;
+  height:30px;
+  padding:0 10px;
+  border:0;
+  border-radius:999px;
+  background:rgba(126,28,174,.12);
+  color:#ddd4e2;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.08em;
+  cursor:pointer;
+}
+.introV3Audio button:hover{background:rgba(172,47,225,.22);color:#fff}
+.introV3Audio input{width:110px;accent-color:#a426d5;cursor:pointer}
+.introV3Audio span{width:22px;color:#8f8496;font-size:9px;font-weight:900;text-align:center}
+.introV3SoundPrompt{
+  position:absolute;
+  z-index:9;
+  left:50%;
+  bottom:70px;
+  transform:translateX(-50%);
+  border:0;
+  background:none;
+  color:#c14bf2;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.14em;
+  cursor:pointer;
+}
+.leanPourCanvas{
+  position:absolute;
+  z-index:30;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+.introV3.entering .introV3Logo img{
+  animation:introLogoSpinV3 .82s cubic-bezier(.17,.84,.24,1) forwards;
+}
+.introV3.entering .introV3Welcome,
+.introV3.entering .introV3Continue,
+.introV3.entering .introV3Audio,
+.introV3.entering .introV3SoundPrompt{
+  animation:introTextOut .28s ease forwards;
+}
+@keyframes introLogoSpinV3{
+  0%{transform:rotate(0) scale(1);opacity:1}
+  48%{transform:rotate(360deg) scale(1.12);opacity:1}
+  100%{transform:rotate(720deg) scale(.76);opacity:0}
+}
+@media(max-width:620px){
+  .introV3Logo{width:min(90vw,430px)}
+  .introV3Welcome{font-size:21px}
+  .introV3Continue{font-size:9px}
+  .introV3Audio{bottom:18px}
+  .introV3Audio input{width:86px}
+}
+@media(prefers-reduced-motion:reduce){
+  .introV3Aura{animation:none}
+  .introV3.entering .introV3Logo img{animation:none;opacity:0}
+}
