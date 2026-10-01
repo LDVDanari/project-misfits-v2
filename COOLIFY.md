@@ -19,9 +19,13 @@ Recommended production values:
 ```text
 NEXT_PUBLIC_SITE_URL=https://projectmisfitsrp.com
 NEXT_PUBLIC_DISCORD_URL=https://discord.gg/hHrSekGueH
+NEXT_PUBLIC_FIVEM_ADDRESS=178.239.199.29
 NEXT_PUBLIC_FIVEM_CONNECT=fivem://connect/178.239.199.29
 FIVEM_HOST=178.239.199.29
 FIVEM_PORT=30120
+DISCORD_INVITE_CODE=hHrSekGueH
+ADMIN_USERNAME=<set-in-coolify>
+ADMIN_PASSWORD=<set-in-coolify>
 ```
 
 `FIVEM_PORT` is set to the standard FiveM port by default. Change it in Coolify if the PMv2 server uses a different status endpoint port.
