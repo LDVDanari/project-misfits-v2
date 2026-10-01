@@ -986,3 +986,35 @@ radial-gradient(ellipse at 98% 0,#7210ac 0 51%,transparent 53%)}
 .refundedOrder .orderMain strong{text-decoration:line-through;color:#8d8492}
 @media(max-width:850px){.financeCards{grid-template-columns:1fr 1fr}.orderToolbar{grid-template-columns:1fr 1fr}.orderToolbar button{grid-column:1/-1}}
 @media(max-width:600px){.financeCards{grid-template-columns:1fr}.orderToolbar{grid-template-columns:1fr}.orderToolbar button{grid-column:auto}.orderActions{width:100%;flex-direction:column}.orderActions select,.orderActions button{width:100%}.orderMoney{justify-items:start}}
+
+
+/* ===== Owner store administration ===== */
+.ownerStoreAdmin{margin-top:70px;padding-top:36px;border-top:1px solid #2d2033}
+.catalogAdminGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:22px}
+.catalogAdminCard{border:1px solid #35243e;border-radius:14px;background:linear-gradient(155deg,#0e0a12,#08070a);padding:20px}
+.catalogAdminHead{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.catalogAdminHead small{color:#bb43ef;font-size:9px;font-weight:900;letter-spacing:.12em}
+.catalogAdminHead h3{margin:6px 0 0;font-size:22px}
+.liveBadge,.offBadge{padding:6px 8px;border-radius:999px;font-size:8px;font-weight:900;letter-spacing:.11em}
+.liveBadge{border:1px solid #1f7c54;background:#07150f;color:#5ee19b}
+.offBadge{border:1px solid #6a2b3b;background:#16080d;color:#ff7f9a}
+.catalogAdminControls{display:grid;gap:12px;margin-top:18px}
+.catalogAdminControls label,.promoAdmin label{display:grid;gap:7px;color:#958c9e;font-size:9px;font-weight:900;letter-spacing:.11em}
+.catalogAdminControls input[type="text"],.catalogAdminControls input:not([type]),.catalogAdminControls input[inputmode],.promoAdmin input{
+ height:42px;border:1px solid #3c2947;border-radius:8px;background:#09070c;color:#fff;padding:0 12px;outline:0
+}
+.toggleLine{grid-template-columns:auto 1fr!important;align-items:center!important}
+.toggleLine input{width:18px;height:18px;accent-color:#c53ff0}
+.catalogAdminControls .primary{width:100%}
+.adminStoreMsg{margin:16px 0;padding:12px 14px;border-left:3px solid #c743ef;background:#0c0910;color:#d8cfdf;font-size:12px}
+.promoAdmin{margin-top:28px;padding:24px;border:1px solid #4f2d5d;border-radius:14px;background:#0a080e}
+.promoAdmin h3{margin:7px 0;font-size:26px}.promoAdmin p{margin:0;color:#9e96a6}
+.promoAdmin form{display:grid;grid-template-columns:1.2fr .8fr .8fr auto;gap:10px;align-items:end;margin-top:18px}
+.promoAdmin input{width:100%}
+.promoAdmin .gold{height:42px}
+.promoList{display:grid;gap:8px;margin-top:20px}
+.promoList article{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid #2a1e30}
+.promoList article b{color:#fff}.promoList article span{color:#d8ad31;font-size:11px;font-weight:900}.promoList article small{color:#817989}
+.unavailableCard{opacity:.72}
+@media(max-width:900px){.catalogAdminGrid{grid-template-columns:1fr}.promoAdmin form{grid-template-columns:1fr 1fr}.promoAdmin .gold{grid-column:1/-1}}
+@media(max-width:600px){.promoAdmin form{grid-template-columns:1fr}.promoAdmin .gold{grid-column:auto}.promoList article{grid-template-columns:1fr}.promoList article span,.promoList article small{justify-self:start}}
