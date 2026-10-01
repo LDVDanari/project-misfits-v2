@@ -56,3 +56,16 @@ Do not add card handling, payment secrets, or homemade payment processing direct
 3. Let **PMv2 Build Check** run.
 4. Merge after the build succeeds.
 5. Coolify deploys `main`.
+
+## Admin foundation
+
+A protected read-only admin dashboard exists at `/admin`.
+
+Set both of these in Coolify before attempting to use it:
+
+```text
+ADMIN_USERNAME=...
+ADMIN_PASSWORD=...
+```
+
+If either value is missing, the admin route returns 404. The current dashboard is intentionally read-only; write controls should not be enabled until database persistence, role-based authentication and audit logging are added.
