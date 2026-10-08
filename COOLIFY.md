@@ -57,15 +57,21 @@ Checkout stays switched off until both Stripe and the database are configured.
 
 ### 3. Stripe
 1. Set `STRIPE_SECRET_KEY` and a tax code (Stripe Tax default or `STRIPE_TAX_CODE`).
-2. Stripe Dashboard -> Developers -> Webhooks -> add endpoint
-   `https://projectmisfitsrp.com/api/stripe/webhook` with these events:
-   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
-   `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`.
-3. Copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+2. That's it. **No Stripe webhook is needed:**
+   - orders are recorded the moment the buyer lands on the confirmation page, and
+   - a background check every 2 minutes (`STORE_SYNC_SECONDS`, minimum 60) picks up anyone who
+     closed the tab, plus refunds (last 3 days) and chargebacks (last 120 days).
+3. Optional: if you ever want instant refund/chargeback handling, add a webhook endpoint
+   `https://projectmisfitsrp.com/api/stripe/webhook` with `checkout.session.completed`,
+   `checkout.session.async_payment_succeeded`, `charge.refunded`, `charge.dispute.created`,
+   `charge.dispute.closed`, and put its signing secret in `STRIPE_WEBHOOK_SECRET`.
+   Both can run together safely.
 
-### 4. Optional staff alerts
-Create a webhook in a staff Discord channel (Channel settings -> Integrations -> Webhooks) and set
-`STORE_ORDERS_WEBHOOK_URL`. New orders, refunds and chargebacks get posted there.
+### 4. Store logs in Discord
+Create a webhook in your log channel (Channel settings -> Integrations -> Webhooks) and set
+`STORE_ORDERS_WEBHOOK_URL`. Every website order (with the coin balance before and after),
+refund and chargeback is posted there. Put the same URL in `Config.LogWebhook` in
+`fivem/pmv2_store/config.lua` so in-city coin spending and staff changes land in the same channel.
 
 ### 5. The city
 Install `fivem/pmv2_store` on the FiveM server (see its `INSTALL.md`).
@@ -79,3 +85,8 @@ Install `fivem/pmv2_store` on the FiveM server (see its `INSTALL.md`).
 - A chargeback takes that order's coins back right away (so they can't be spent) and alerts staff.
   If you win it, the coins are given back; if you lose, packages and priority are revoked.
 - If a payment was already refunded or disputed by the time its order is recorded, nothing is handed out.
+
+## Store intro music
+The intro plays "Misfits After Dark", an original beat generated in the browser (no files, nothing to license).
+To use your own track instead, set `NEXT_PUBLIC_INTRO_AUDIO_URL` (and optionally
+`NEXT_PUBLIC_INTRO_AUDIO_TITLE` / `NEXT_PUBLIC_INTRO_AUDIO_ARTIST`). Only use music you have the rights to.

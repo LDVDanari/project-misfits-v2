@@ -20,3 +20,10 @@ Config.ItemDeliveries = true
 
 -- Extra console logging.
 Config.Debug = false
+
+-- Discord log channel. In Discord: Channel settings -> Integrations -> Webhooks -> New Webhook -> Copy URL.
+-- Logs coins spent in the city (what was bought + before/after balance), staff coin adds/removes,
+-- script grants, store deliveries, packages marked done and failed deliveries.
+-- Leave '' to turn logging off.
+Config.LogWebhook = ''
+Config.LogName = 'PMv2 Store Logs'

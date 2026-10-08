@@ -21,11 +21,21 @@ Needs: `qbx_core`, `ox_lib`, `oxmysql` (and `ox_inventory` for item deliveries).
 Players need the **Discord app open** when they launch FiveM. That's how the city knows
 which Discord account they bought with. If it can't see Discord, `/coins` tells them how to fix it.
 
+## Discord logs
+Put a channel webhook URL in `Config.LogWebhook` (config.lua). It logs:
+- **Coins spent** in the city: who, what they bought, cost, balance before → after, which script
+- **Coins added / removed**: by staff (with reason) or by a script, balance before → after
+- **Store deliveries** received in the city, and any that **failed**
+- **Packages set up** with `/storedone`
+
+Use the same webhook as the website's `STORE_ORDERS_WEBHOOK_URL` to keep everything in one channel
+(website purchases also show the balance before → after).
+
 ## Commands
 | Command | Who | What it does |
 |---|---|---|
 | `/coins` | Everyone | Shows your Misfit Coin balance |
-| `/coinsadd [id or Discord ID] [amount] [reason]` | Staff | Gives coins (works for offline players by Discord ID) |
+| `/coinsadd [id or Discord ID] [amount] [reason]` | Staff | Gives coins (offline players by Discord ID if they already have a store account) |
 | `/coinsremove [id or Discord ID] [amount] [reason]` | Staff | Takes coins (never below 0) |
 | `/storelookup [id, Discord ID or order code]` | Staff | Orders, coins, packages waiting on setup, stuck deliveries (prints to F8) |
 | `/storedone [order code]` | Staff | Marks a package order as set up and tells the buyer |

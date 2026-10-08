@@ -119,6 +119,54 @@ local function audit(actor, action, targetType, targetId, details)
     )
 end
 
+-- ------------------------------------------------------------
+-- Discord logs
+-- ------------------------------------------------------------
+
+local COLORS = { spend = 0xa200ec, add = 0x2ecc71, remove = 0xe67e22, delivery = 0x3498db, done = 0xf1c40f, fail = 0xe74c3c }
+
+local function who(src)
+    if not src or src == 0 then return 'Console' end
+    local player = exports.qbx_core:GetPlayer(src)
+    local info = player and player.PlayerData and player.PlayerData.charinfo
+    local char = info and ('%s %s'):format(info.firstname or '', info.lastname or ''):gsub('^%s+', ''):gsub('%s+$', '') or nil
+    local cid = player and player.PlayerData and player.PlayerData.citizenid
+    local discordId = discordOf(src)
+    return ('%s%s (ID %s%s)%s'):format(
+        GetPlayerName(src) or 'Unknown',
+        char and char ~= '' and (' / ' .. char) or '',
+        src,
+        cid and (', ' .. cid) or '',
+        discordId and (' <@' .. discordId .. '>') or '')
+end
+
+local function sendLog(title, color, fields, description)
+    local url = Config.LogWebhook
+    if type(url) ~= 'string' or not url:match('^https://[%w%.]*discord[%w]*%.com/api/webhooks/') then return end
+    local embedFields = {}
+    for _, f in ipairs(fields or {}) do
+        embedFields[#embedFields + 1] = { name = f[1], value = tostring(f[2] or '-'):sub(1, 1000), inline = f[3] == true }
+    end
+    PerformHttpRequest(url, function(code)
+        if code and code >= 300 then log(('Discord log failed (HTTP %s)'):format(code)) end
+    end, 'POST', json.encode({
+        username = Config.LogName or 'PMv2 Store Logs',
+        allowed_mentions = { parse = {} },
+        embeds = { {
+            title = title,
+            description = description,
+            color = color,
+            fields = embedFields,
+            timestamp = os.date('!%Y-%m-%dT%H:%M:%SZ'),
+            footer = { text = GetConvar('sv_hostname', 'PMv2'):sub(1, 60) }
+        } }
+    }), { ['Content-Type'] = 'application/json' })
+end
+
+local function balanceLine(before, after)
+    return ('%s → %s'):format(before, after)
+end
+
 local function uniqueKey(prefix, customerId)
     return ('%s:%s:%s:%06d'):format(prefix, customerId, os.time(), math.random(0, 999999))
 end
@@ -214,6 +262,14 @@ local function processDeliveries(players)
                     { p.citizenid, row.id }
                 )
                 debug(('Delivered #%s (%s) to %s'):format(row.id, row.action, p.citizenid))
+                local what = payload.message or (payload.item and ('%sx %s'):format(payload.count or 1, payload.item)) or row.action
+                local fields = { { 'Player', who(p.src) }, { 'Delivered', what } }
+                if payload.order_ref then fields[#fields + 1] = { 'Order', payload.order_ref, true } end
+                if payload.coins then
+                    local c = customerByDiscord(p.discord)
+                    fields[#fields + 1] = { Config.CoinName .. ' now', c and c.coins or '?', true }
+                end
+                sendLog('Store delivery received', COLORS.delivery, fields)
             else
                 local attempts = (tonumber(row.attempts) or 0) + 1
                 local status = attempts >= Config.MaxAttempts and 'failed' or 'pending'
@@ -222,6 +278,12 @@ local function processDeliveries(players)
                     { status, tostring(err or 'unknown error'):sub(1, 250), row.id }
                 )
                 log(('Delivery #%s (%s) for %s failed (%s/%s): %s'):format(row.id, row.action, p.citizenid, attempts, Config.MaxAttempts, tostring(err)))
+                if status == 'failed' then
+                    sendLog('Store delivery FAILED', COLORS.fail, {
+                        { 'Player', who(p.src) }, { 'Delivery', ('#%s %s'):format(row.id, row.action), true },
+                        { 'Why', tostring(err) }, { 'Next step', 'Fix the cause, then set its status back to pending (or hand it out by hand).' }
+                    })
+                end
             end
         elseif claimed == 1 then
             -- Player left between the lookup and the claim: put it back.
@@ -306,12 +368,20 @@ local function spendCoins(src, amount, reference)
     end
     local entry = MySQL.single.await('SELECT balance_after FROM pmv2_store_coin_ledger WHERE idempotency_key = ?', { key })
     if not entry then return false, 'not_enough_coins' end
-    return true, tonumber(entry.balance_after)
+    local after = tonumber(entry.balance_after)
+    sendLog(('%s spent'):format(Config.CoinName), COLORS.spend, {
+        { 'Player', who(src) },
+        { 'Bought', tostring(reference or 'In-city purchase') },
+        { 'Cost', amount, true },
+        { 'Balance', balanceLine(after + amount, after), true },
+        { 'Script', GetInvokingResource() or 'pmv2_store', true }
+    })
+    return true, after
 end
 
 -- Adds (or with a negative amount, removes) coins. Removing never goes below 0.
 -- target: online server ID or Discord ID. Returns true, newBalance  or  false, reason.
-local function adjustCoins(target, delta, reason, actor)
+local function adjustCoins(target, delta, reason, actor, staffSrc)
     delta = math.floor(tonumber(delta) or 0)
     if delta == 0 then return false, 'invalid_amount' end
     local discordId, online = resolveTarget(target)
@@ -353,6 +423,14 @@ local function adjustCoins(target, delta, reason, actor)
     if not entry then return false, 'not_enough_coins' end
 
     audit(actor, 'coins.' .. kind, 'customer', discordId, { delta = delta, reason = reason, balance_after = entry.balance_after })
+    local after = tonumber(entry.balance_after)
+    sendLog(delta > 0 and ('%s added'):format(Config.CoinName) or ('%s removed'):format(Config.CoinName), delta > 0 and COLORS.add or COLORS.remove, {
+        { 'Player', online and who(online) or ('<@%s> (offline, Discord %s)'):format(discordId, discordId) },
+        { 'By', staffSrc and who(staffSrc) or actor },
+        { 'Amount', (delta > 0 and '+' or '') .. delta, true },
+        { 'Balance', balanceLine(after - delta, after), true },
+        { 'Reason', tostring(reason or '-') }
+    })
     if online then
         notify(online, delta > 0
             and ('%s %s were added to your account.'):format(delta, Config.CoinName)
@@ -406,7 +484,7 @@ lib.addCommand('coinsadd', {
 }, function(source, args)
     local amount = math.floor(tonumber(args.amount) or 0)
     if amount <= 0 then return notify(source, REASONS.invalid_amount, 'error') end
-    local ok, result = adjustCoins(args.target, amount, args.reason, ('staff:%s'):format(displayName(source)))
+    local ok, result = adjustCoins(args.target, amount, args.reason, ('staff:%s'):format(displayName(source)), source)
     notify(source, ok and ('Done. New balance: %s'):format(result) or REASONS[result] or result, ok and 'success' or 'error')
 end)
 
@@ -421,7 +499,7 @@ lib.addCommand('coinsremove', {
 }, function(source, args)
     local amount = math.floor(tonumber(args.amount) or 0)
     if amount <= 0 then return notify(source, REASONS.invalid_amount, 'error') end
-    local ok, result = adjustCoins(args.target, -amount, args.reason, ('staff:%s'):format(displayName(source)))
+    local ok, result = adjustCoins(args.target, -amount, args.reason, ('staff:%s'):format(displayName(source)), source)
     notify(source, ok and ('Done. New balance: %s'):format(result) or REASONS[result] or result, ok and 'success' or 'error')
 end)
 
@@ -503,6 +581,13 @@ lib.addCommand('storedone', {
 
     audit(actor, 'order.fulfilled', 'order', ref, nil)
     notify(source, ('Order %s marked as set up.'):format(ref), 'success')
+    local items = MySQL.query.await("SELECT product_title, quantity FROM pmv2_store_order_items WHERE order_id = ? AND kind = 'package'", { order.id }) or {}
+    local list = {}
+    for _, it in ipairs(items) do list[#list + 1] = ('%sx %s'):format(it.quantity, it.product_title) end
+    sendLog('Package set up', COLORS.done, {
+        { 'Order', ref, true }, { 'Buyer', ('<@%s>'):format(order.discord_id), true },
+        { 'Package', table.concat(list, ', ') }, { 'By', who(source) }
+    })
     local _, online = resolveTarget(order.discord_id)
     if online then notify(online, ('Your package from order %s is all set up. Enjoy!'):format(ref), 'success', 12000) end
 end)
