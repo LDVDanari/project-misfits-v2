@@ -33,7 +33,8 @@ export async function POST(req){
   if(!expectedUser||!expectedPass)return NextResponse.json({error:'Owner login is not configured.'},{status:503});
   const normalizedExpectedUser=expectedUser.normalize('NFC');const normalizedExpectedPass=expectedPass.normalize('NFC');const userOk=safeEqual(suppliedUser.toLowerCase(),normalizedExpectedUser.toLowerCase());
   const passOk=safeEqual(suppliedPass,normalizedExpectedPass);
-  if(!userOk)return NextResponse.json({error:'Owner username does not match the live Coolify value.',reason:'username'},{status:401});if(!passOk)return NextResponse.json({error:'Owner password does not match the live Coolify value.',reason:'password'},{status:401});
+  // Same answer for a wrong username or a wrong password, so neither can be guessed on its own.
+  if(!userOk||!passOk){await new Promise(r=>setTimeout(r,400));return NextResponse.json({error:'Wrong username or password.'},{status:401});}
   const exp=Date.now()+12*60*60*1000;
   const payload=b64(normalizedExpectedUser+'|'+exp);
   const token=payload+'.'+sign(payload,normalizedExpectedUser,normalizedExpectedPass);
