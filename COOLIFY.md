@@ -60,7 +60,7 @@ Checkout stays switched off until both Stripe and the database are configured.
 2. Stripe Dashboard -> Developers -> Webhooks -> add endpoint
    `https://projectmisfitsrp.com/api/stripe/webhook` with these events:
    `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
-   `charge.refunded`, `charge.dispute.created`.
+   `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`.
 3. Copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
 
 ### 4. Optional staff alerts
@@ -74,5 +74,8 @@ Install `fivem/pmv2_store` on the FiveM server (see its `INSTALL.md`).
 - Coins are added to the buyer's account instantly; they get a message in the city next time they're on.
 - Packages are saved as waiting on setup. Staff finish them and run `/storedone PM-XXXXXX`
   in the city, or mark the order fulfilled in the owner dashboard.
-- A full refund takes the coins back and revokes packages automatically. Partial refunds
-  and chargebacks are flagged for staff, nothing is removed automatically.
+- A full refund takes the coins back and revokes packages automatically. Partial refunds are
+  flagged for staff.
+- A chargeback takes that order's coins back right away (so they can't be spent) and alerts staff.
+  If you win it, the coins are given back; if you lose, packages and priority are revoked.
+- If a payment was already refunded or disputed by the time its order is recorded, nothing is handed out.

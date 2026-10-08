@@ -94,13 +94,17 @@ local function customerByDiscord(discordId)
     ]], { discordId })
 end
 
--- Makes sure a customer + wallet row exist (for staff grants to people who never bought).
-local function ensureCustomer(discordId)
-    MySQL.insert.await(
-        'INSERT INTO pmv2_store_customers (discord_id) VALUES (?) ON DUPLICATE KEY UPDATE discord_id = discord_id',
-        { discordId }
-    )
+-- Finds the customer + wallet. Only creates a new account for a player who's online right now,
+-- so a mistyped Discord ID can't create a made-up account.
+local function ensureCustomer(discordId, online)
+    if online then
+        MySQL.insert.await(
+            'INSERT INTO pmv2_store_customers (discord_id) VALUES (?) ON DUPLICATE KEY UPDATE discord_id = discord_id',
+            { discordId }
+        )
+    end
     local row = MySQL.single.await('SELECT id FROM pmv2_store_customers WHERE discord_id = ?', { discordId })
+    if not row then return nil end
     MySQL.insert.await(
         'INSERT INTO pmv2_store_wallets (customer_id) VALUES (?) ON DUPLICATE KEY UPDATE customer_id = customer_id',
         { row.id }
@@ -286,7 +290,7 @@ local function spendCoins(src, amount, reference)
         -- Both statements only do anything if the balance covers it, and run all-or-nothing.
         {
             query = [[INSERT INTO pmv2_store_coin_ledger (customer_id, delta, reason, balance_after, reference, idempotency_key, actor)
-                      SELECT customer_id, ?, 'spend', balance - ?, ?, ?, ? FROM pmv2_store_wallets WHERE customer_id = ? AND balance >= ?]],
+                      SELECT customer_id, ?, 'spend', balance - ?, ?, ?, ? FROM pmv2_store_wallets WHERE customer_id = ? AND balance >= ? FOR UPDATE]],
             values = { -amount, amount, tostring(reference or 'In-city purchase'):sub(1, 128), key, actor, customer.id, amount }
         },
         {
@@ -313,7 +317,8 @@ local function adjustCoins(target, delta, reason, actor)
     local discordId, online = resolveTarget(target)
     if not discordId then return false, 'player_not_found' end
 
-    local customerId = ensureCustomer(discordId)
+    local customerId = ensureCustomer(discordId, online)
+    if not customerId then return false, 'no_account' end
     if busy[customerId] then return false, 'busy' end
     busy[customerId] = true
 
@@ -330,7 +335,7 @@ local function adjustCoins(target, delta, reason, actor)
     local ok, done = pcall(MySQL.transaction.await, {
         {
             query = [[INSERT INTO pmv2_store_coin_ledger (customer_id, delta, reason, balance_after, reference, idempotency_key, actor)
-                      SELECT customer_id, ?, ?, balance + ?, ?, ?, ? FROM pmv2_store_wallets WHERE customer_id = ?]] .. guard,
+                      SELECT customer_id, ?, ?, balance + ?, ?, ?, ? FROM pmv2_store_wallets WHERE customer_id = ?]] .. guard .. ' FOR UPDATE',
             values = insertValues
         },
         {
@@ -383,6 +388,7 @@ end)
 
 local REASONS = {
     player_not_found = 'Player not found. Use their server ID (online) or Discord ID.',
+    no_account = 'No store account for that Discord ID. Check the ID, or do it while they\'re in the city.',
     not_enough_coins = 'They don\'t have that many coins.',
     busy = 'Their coins are being changed right now. Try again.',
     invalid_amount = 'Amount must be a whole number above 0.',

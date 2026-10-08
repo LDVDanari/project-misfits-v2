@@ -20,7 +20,6 @@ export async function GET(req) {
   url.searchParams.set('scope', 'identify');
   url.searchParams.set('state', state);
   url.searchParams.set('redirect_uri', redirectUri(req));
-  url.searchParams.set('prompt', 'none');
 
   const res = NextResponse.redirect(url.toString());
   res.cookies.set(OAUTH_STATE_COOKIE, state + '|' + next, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 600 });

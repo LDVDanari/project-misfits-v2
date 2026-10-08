@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 // Stripe events to enable for this endpoint:
 //   checkout.session.completed, checkout.session.async_payment_succeeded,
-//   charge.refunded, charge.dispute.created
+//   charge.refunded, charge.dispute.created, charge.dispute.closed
 export async function POST(req) {
   const raw = await req.text();
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
