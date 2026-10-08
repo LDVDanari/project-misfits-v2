@@ -1018,3 +1018,17 @@ radial-gradient(ellipse at 98% 0,#7210ac 0 51%,transparent 53%)}
 .unavailableCard{opacity:.72}
 @media(max-width:900px){.catalogAdminGrid{grid-template-columns:1fr}.promoAdmin form{grid-template-columns:1fr 1fr}.promoAdmin .gold{grid-column:1/-1}}
 @media(max-width:600px){.promoAdmin form{grid-template-columns:1fr}.promoAdmin .gold{grid-column:auto}.promoList article{grid-template-columns:1fr}.promoList article span,.promoList article small{justify-self:start}}
+/* Discord login at checkout */
+.discordAccount{margin-top:18px;padding:16px;border:1px solid #35223f;background:#0e0a14;display:grid;gap:10px}
+.discordAccount p{margin:0;color:#aaa2b2;font-size:13px;line-height:1.6}
+.discordAccount>small{color:#8f8599;font-size:11px}
+.discordAccount .discordLogin{display:block;text-align:center;padding:14px 20px;text-decoration:none;font-weight:900;font-size:12px;letter-spacing:.06em}
+.discordAccount.linked{grid-template-columns:44px 1fr auto;align-items:center;gap:12px}
+.discordAccount.linked img{width:44px;height:44px;border-radius:50%;border:1px solid #573067}
+.discordAccount .who{display:grid;gap:2px;min-width:0}
+.discordAccount .who small{color:#8f8599;font-size:9px;font-weight:900;letter-spacing:.12em}
+.discordAccount .who b{color:#fff;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.discordAccount .who span{color:#bd48ff;font-size:11px}
+.discordAccount.linked button{border:1px solid #573067;border-radius:8px;background:#120918;color:#fff;padding:9px 12px;font-size:9px;font-weight:900;letter-spacing:.08em;cursor:pointer}
+.discordAccount.linked button:hover{border-color:#d14ef4;background:#1b0c24}
+.confirmationTop code.orderRef{color:#fff;font-size:22px;font-weight:900;letter-spacing:.08em}

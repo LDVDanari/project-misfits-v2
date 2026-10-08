@@ -40,4 +40,39 @@ ADMIN_PASSWORD=<set-in-coolify>
 
 ## Commerce
 
-Checkout remains disabled until a production commerce provider is selected and configured. The site cart is currently client-side only and does not process payments.
+Checkout uses Stripe, and paid orders are delivered automatically through the store database.
+Checkout stays switched off until both Stripe and the database are configured.
+
+### 1. Database
+1. Run `db/pmv2_store.sql` on the MySQL/MariaDB database your FiveM server uses.
+2. Recommended: create the website-only login from the bottom of that file.
+3. In Coolify set either `DATABASE_URL=mysql://user:pass@host:3306/dbname`
+   or `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` (`DB_SSL=true` if your host needs it).
+
+### 2. Log in with Discord
+1. Discord Developer Portal -> your application (the bot's app is fine) -> **OAuth2**.
+2. Add the redirect `https://projectmisfitsrp.com/api/auth/discord/callback`.
+3. In Coolify set `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI` (the URL above)
+   and `CUSTOMER_SESSION_SECRET` (a long random string, 32+ characters).
+
+### 3. Stripe
+1. Set `STRIPE_SECRET_KEY` and a tax code (Stripe Tax default or `STRIPE_TAX_CODE`).
+2. Stripe Dashboard -> Developers -> Webhooks -> add endpoint
+   `https://projectmisfitsrp.com/api/stripe/webhook` with these events:
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `charge.refunded`, `charge.dispute.created`.
+3. Copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+
+### 4. Optional staff alerts
+Create a webhook in a staff Discord channel (Channel settings -> Integrations -> Webhooks) and set
+`STORE_ORDERS_WEBHOOK_URL`. New orders, refunds and chargebacks get posted there.
+
+### 5. The city
+Install `fivem/pmv2_store` on the FiveM server (see its `INSTALL.md`).
+
+### What happens on a purchase
+- Coins are added to the buyer's account instantly; they get a message in the city next time they're on.
+- Packages are saved as waiting on setup. Staff finish them and run `/storedone PM-XXXXXX`
+  in the city, or mark the order fulfilled in the owner dashboard.
+- A full refund takes the coins back and revokes packages automatically. Partial refunds
+  and chargebacks are flagged for staff, nothing is removed automatically.

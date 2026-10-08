@@ -1,4 +1,4 @@
-import {NextResponse} from 'next/server';import {stripeReady,stripeRequest} from '../../../../lib/stripeServer';import {getProduct} from '../../../../lib/products';
+import {NextResponse} from 'next/server';import {stripeReady,stripeRequest} from '../../../../lib/stripeServer';import {getProduct} from '../../../../lib/products';import {dbReady} from '../../../../lib/db';import {orderRefForSession} from '../../../../lib/fulfillment';
 export const runtime='nodejs';
 export async function GET(req){try{
  if(!stripeReady())return NextResponse.json({error:'Checkout is not configured.'},{status:503});
@@ -16,8 +16,13 @@ export async function GET(req){try{
    if(p)items.push({slug:p.slug,title:p.title,qty,delivery:p.delivery,category:p.category});
  }
  if(!items.length)for(const li of s.line_items?.data||[])items.push({slug:'',title:li.description||'Store item',qty:li.quantity||1,delivery:'Contact purchase support if fulfillment is required.',category:'STORE'});
+ let order=null;
+ if(dbReady()){try{order=await orderRefForSession(s.id)}catch{}}
  return NextResponse.json({
    id:s.id,
+   order_ref:order?.order_ref||null,
+   order_status:order?.status||null,
+   discord_username:s.metadata?.discord_username||'',
    paid:s.payment_status==='paid',
    payment_status:s.payment_status,
    amount_total:s.amount_total||0,
