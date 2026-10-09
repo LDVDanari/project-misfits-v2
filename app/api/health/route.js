@@ -1,4 +1,4 @@
-import { tebexReady, getTebexPackages, createBasket, addBasketPackage, clientIp, tebexToken } from '../../../lib/tebex';
+import { tebexReady, getTebexPackages, createBasket, addBasketPackage, clientIp, tebexToken, tebexPrivateKey } from '../../../lib/tebex';
 import { dbReady } from '../../../lib/db';
 import { customerLoginReady } from '../../../lib/customerSession';
 import { getResolvedCatalog } from '../../../lib/catalogServer';
@@ -15,7 +15,7 @@ let lastCheckoutTest = 0;
 async function checkoutTest(req) {
   if (Date.now() - lastCheckoutTest < 30_000) return { skipped: 'ran less than 30s ago' };
   lastCheckoutTest = Date.now();
-  const out = { tokenLength: tebexToken().length, steps: [] };
+  const out = { tokenLength: tebexToken().length, privateKey: Boolean(tebexPrivateKey()), steps: [] };
   const run = async (name, fn) => {
     try {
       const value = await fn();
@@ -31,7 +31,7 @@ async function checkoutTest(req) {
   if (!item) { out.steps.push({ step: 'find package', ok: false, error: 'No live items' }); return out; }
   const origin = (process.env.NEXT_PUBLIC_SITE_URL || 'https://projectmisfitsrp.com').replace(/\/+$/, '');
   const ip = clientIp(req);
-  out.ipSent = Boolean(ip);
+  out.ipSent = Boolean(ip && tebexPrivateKey());
   const basket = await run('create basket', () => createBasket({
     ipAddress: ip, completeUrl: origin + '/checkout/success', cancelUrl: origin + '/checkout', custom: { source: 'health-check' }
   }));
