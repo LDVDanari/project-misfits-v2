@@ -37,29 +37,8 @@ async function checkoutTest(req) {
   }));
   if (!basket) return out;
   out.basketHasIdent = Boolean(basket.ident);
-  const added = await run(`add ${item.title} (#${item.tebex_package_id})`, () => addBasketPackage(basket.ident, item.tebex_package_id, 1));
-  if (added) out.basketTotal = added.total_price;
+  out.addPackages = 'happens after the player signs in with FiveM (Tebex requirement)';
   const base = (process.env.TEBEX_API_BASE || 'https://headless.tebex.io/api').replace(/\/+$/, '');
-
-  // Try the other request shapes Tebex might want, to see which one it accepts.
-  if (!added) {
-    const pkgId = item.tebex_package_id;
-    const raw = async (label, url, body) => run(label, async () => {
-      const res = await fetch(url, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store' });
-      const json = await res.json().catch(() => null);
-      if (!res.ok) { const e = new Error(`HTTP ${res.status}`); e.status = res.status; e.body = json; throw e; }
-      return json;
-    });
-    const tok = encodeURIComponent(tebexToken()), id = encodeURIComponent(basket.ident);
-    await raw('variant: string package_id', `${base}/baskets/${id}/packages`, { package_id: String(pkgId), quantity: 1 });
-    await raw('variant: type single', `${base}/baskets/${id}/packages`, { package_id: Number(pkgId), quantity: 1, type: 'single' });
-    await raw('variant: account-scoped path', `${base}/accounts/${tok}/baskets/${id}/packages`, { package_id: Number(pkgId), quantity: 1 });
-    await raw('variant: id field', `${base}/baskets/${id}/packages`, { id: Number(pkgId), quantity: 1 });
-    const pkgs = await getTebexPackages().catch(() => []);
-    const p = pkgs.find(x => String(x.id) === String(pkgId));
-    if (p) out.packageInfo = { id: p.id, ident: p.ident || null, type: p.type, disable_quantity: p.disable_quantity, category: p.category?.name || null, user_limit: p.user_limit };
-    if (p?.ident) await raw('variant: package ident', `${base}/baskets/${id}/packages`, { package_id: p.ident, quantity: 1 });
-  }
   const auth = await run('sign-in link', async () => {
     const res = await fetch(`${base}/accounts/${encodeURIComponent(tebexToken())}/baskets/${encodeURIComponent(basket.ident)}/auth?returnUrl=${encodeURIComponent(origin + '/checkout')}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
     const json = await res.json().catch(() => null);

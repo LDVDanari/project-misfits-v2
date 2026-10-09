@@ -5,6 +5,7 @@ import { useCart } from './CartProvider';
 const CHECKOUT_ERRORS = {
   signin: 'Tebex needs you to sign in with your FiveM account before paying. Press continue to try again.',
   expired: 'That checkout expired. Press continue to start a new one.',
+  unavailable: 'Something in your cart just became unavailable. Please review your cart and try again.',
   failed: 'Something went wrong talking to Tebex. Please try again.'
 };
 
