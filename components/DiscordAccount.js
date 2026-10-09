@@ -42,9 +42,9 @@ export default function DiscordAccount({ account }) {
       <div className="discordAccount linked">
         <img src={u.avatarUrl} alt="" width="44" height="44" />
         <div className="who">
-          <small>DELIVERING TO</small>
+          <small>YOUR ACCOUNT</small>
           <b>{u.username}</b>
-          {typeof u.coins === 'number' && <span>{u.coins} Misfit Coins on this account</span>}
+          {typeof u.coins === 'number' && <span>{u.coins} Misfit Coins right now</span>}
         </div>
         <button type="button" onClick={switchAccount}>SWITCH</button>
       </div>
@@ -53,10 +53,8 @@ export default function DiscordAccount({ account }) {
 
   return (
     <div className="discordAccount">
-      <p>Log in with the Discord account you play with. Coins and packages are delivered to that account in the city.</p>
-      {account.loginAvailable
-        ? <a className="primary discordLogin" href={LOGIN_URL}>LOG IN WITH DISCORD</a>
-        : <p className="checkoutError">Discord login isn&apos;t available yet. Please try again soon.</p>}
+      <p>Optional: log in with Discord to see your Misfit Coin balance here.</p>
+      {account.loginAvailable && <a className="gold discordLogin" href={LOGIN_URL}>LOG IN WITH DISCORD</a>}
       {error && <p className="checkoutError">{error}</p>}
     </div>
   );

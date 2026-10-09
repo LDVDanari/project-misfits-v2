@@ -1,6 +1,7 @@
-import { stripeReady } from '../../../lib/stripeServer';
+import { tebexReady, getTebexPackages } from '../../../lib/tebex';
 import { dbReady } from '../../../lib/db';
 import { customerLoginReady } from '../../../lib/customerSession';
+import { getResolvedCatalog } from '../../../lib/catalogServer';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -9,23 +10,35 @@ export const runtime = 'nodejs';
 // so setup problems in Coolify are easy to spot.
 export async function GET() {
   const has = k => Boolean(String(process.env[k] || '').trim());
-  const secretLen = String(process.env.CUSTOMER_SESSION_SECRET || '').trim().length;
   const missing = [];
-  if (!has('STRIPE_SECRET_KEY')) missing.push('STRIPE_SECRET_KEY');
-  if (!dbReady()) missing.push(has('DATABASE_URL') ? 'DATABASE_URL' : 'DB_HOST / DB_USER / DB_NAME (or DATABASE_URL)');
-  if (!has('DISCORD_CLIENT_ID')) missing.push('DISCORD_CLIENT_ID');
-  if (!has('DISCORD_CLIENT_SECRET')) missing.push('DISCORD_CLIENT_SECRET');
-  if (secretLen < 32) missing.push(secretLen ? 'CUSTOMER_SESSION_SECRET (too short, needs 32+ characters)' : 'CUSTOMER_SESSION_SECRET');
+  if (!tebexReady()) missing.push('TEBEX_PUBLIC_TOKEN');
+
+  let tebexReachable = false, tebexPackages = 0, liveItems = 0, tebexError = null;
+  if (tebexReady()) {
+    try {
+      tebexPackages = (await getTebexPackages()).length;
+      tebexReachable = true;
+      liveItems = (await getResolvedCatalog()).filter(x => x.active).length;
+    } catch (e) {
+      tebexError = e.message;
+    }
+  }
+
   return Response.json({
     ok: true,
     service: 'project-misfits-v2-web',
-    version: '2.1.0',
+    version: '3.0.0',
     store: {
-      stripe: stripeReady(),
+      processor: 'tebex',
+      tebex: tebexReady(),
+      tebexReachable,
+      tebexPackages,
+      liveItems,
+      ...(tebexError ? { tebexError } : {}),
+      checkoutReady: tebexReachable && liveItems > 0,
+      // optional extras: coin balance on the checkout page
       database: dbReady(),
       discordLogin: customerLoginReady(),
-      orderLogs: has('STORE_ORDERS_WEBHOOK_URL'),
-      checkoutReady: stripeReady() && dbReady() && customerLoginReady(),
       missing
     }
   }, { headers: { 'Cache-Control': 'no-store' } });

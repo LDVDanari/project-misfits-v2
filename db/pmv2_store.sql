@@ -160,6 +160,29 @@ CREATE TABLE IF NOT EXISTS pmv2_store_coin_ledger (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
+-- Tebex purchases (written by the pmv2_store resource; it also creates this table itself).
+-- One row per Tebex purchase/reversal command, so nothing is ever credited twice and
+-- purchases for offline players wait here until they load in.
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS pmv2_store_tebex (
+  id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  tx_key         VARCHAR(160) NOT NULL,                  -- buy:<transaction>:<package> / rev:<transaction>:<package>
+  kind           ENUM('purchase','reversal') NOT NULL,
+  transaction_id VARCHAR(64)  NOT NULL,
+  package_id     VARCHAR(32)  NOT NULL,
+  identifier     VARCHAR(64)  NOT NULL,                  -- fivem:<cfx.re id>
+  quantity       INT UNSIGNED NOT NULL DEFAULT 1,
+  coins          INT UNSIGNED NOT NULL,
+  status         ENUM('pending','delivered','canceled') NOT NULL DEFAULT 'pending',
+  discord_id     VARCHAR(32)  NULL,                      -- wallet that got the coins
+  created_at     DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  delivered_at   DATETIME(3)  NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_tebex_tx (tx_key),
+  KEY idx_tebex_pending (status, identifier)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
 -- Entitlements: things a customer owns that last over time.
 --   priority -> tier bronze/silver/gold, read by the queue when they connect
 --   package  -> gang/family/business/mlo, 'pending_setup' until staff finish it

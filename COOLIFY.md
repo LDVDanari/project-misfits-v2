@@ -38,53 +38,48 @@ ADMIN_PASSWORD=<set-in-coolify>
 4. Traefik routes the production domains to port 3000.
 5. Verify `/api/health`, the homepage, store, and `/status`.
 
-## Commerce
+## Commerce (Tebex)
 
-Checkout uses Stripe, and paid orders are delivered automatically through the store database.
-Checkout stays switched off until both Stripe and the database are configured.
+Payments run through **Tebex**, the official FiveM store partner (Cfx.re requires it).
+The website shows the store and builds the cart; Tebex signs the buyer in with their FiveM
+account, takes the payment, and runs the delivery command on the FiveM server.
 
-### 1. Database
-1. Run `db/pmv2_store.sql` on the MySQL/MariaDB database your FiveM server uses.
-2. Recommended: create the website-only login from the bottom of that file.
-3. In Coolify set either `DATABASE_URL=mysql://user:pass@host:3306/dbname`
-   or `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` (`DB_SSL=true` if your host needs it).
+### 1. Tebex packages
+1. In the Tebex control panel, create one package per coin bundle. **Name each package exactly like
+   the site product** (e.g. `10 Misfit Coins`, `25 Misfit Coins`, ...). Matching names go live on the
+   site automatically, with Tebex's price. Anything without a Tebex package shows COMING SOON.
+   (If you'd rather use different names, set `TEBEX_PACKAGE_MAP` - see `.env.example`.)
+2. On each coin package, add a **command** (run "even if the player is offline"):
+   ```
+   pmv2_tebex {id} {transaction} {packageId} {purchaseQuantity} 10
+   ```
+   The last number is the coins in ONE of that package (10, 25, 50, 100, 250, 500).
+3. Add the same command as `pmv2_tebex_reverse ...` under **Chargeback** and **Refund** commands,
+   so coins are taken back automatically.
+4. Link the FiveM server: put `sv_tebexSecret <your secret>` at the bottom of `server.cfg`.
 
-### 2. Log in with Discord
-1. Discord Developer Portal -> your application (the bot's app is fine) -> **OAuth2**.
-2. Add the redirect `https://projectmisfitsrp.com/api/auth/discord/callback`.
-3. In Coolify set `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI` (the URL above)
-   and `CUSTOMER_SESSION_SECRET` (a long random string, 32+ characters).
+### 2. Website
+In Coolify set `TEBEX_PUBLIC_TOKEN` (Tebex -> Integrations -> Headless API) and redeploy.
+`/api/health` shows `checkoutReady: true` once packages are matched.
 
-### 3. Stripe
-1. Set `STRIPE_SECRET_KEY` and a tax code (Stripe Tax default or `STRIPE_TAX_CODE`).
-2. That's it. **No Stripe webhook is needed:**
-   - orders are recorded the moment the buyer lands on the confirmation page, and
-   - a background check every 2 minutes (`STORE_SYNC_SECONDS`, minimum 60) picks up anyone who
-     closed the tab, plus refunds (last 3 days) and chargebacks (last 120 days).
-3. Optional: if you ever want instant refund/chargeback handling, add a webhook endpoint
-   `https://projectmisfitsrp.com/api/stripe/webhook` with `checkout.session.completed`,
-   `checkout.session.async_payment_succeeded`, `charge.refunded`, `charge.dispute.created`,
-   `charge.dispute.closed`, and put its signing secret in `STRIPE_WEBHOOK_SECRET`.
-   Both can run together safely.
-
-### 4. Store logs in Discord
-Create a webhook in your log channel (Channel settings -> Integrations -> Webhooks) and set
-`STORE_ORDERS_WEBHOOK_URL`. Every website order (with the coin balance before and after),
-refund and chargeback is posted there. Put the same URL in `Config.LogWebhook` in
-`fivem/pmv2_store/config.lua` so in-city coin spending and staff changes land in the same channel.
-
-### 5. The city
-Install `fivem/pmv2_store` on the FiveM server (see its `INSTALL.md`).
+### 3. The city
+Install / update `fivem/pmv2_store` (see its `INSTALL.md`) and set `Config.LogWebhook`
+so purchases, coin spending and staff changes are logged to Discord.
 
 ### What happens on a purchase
-- Coins are added to the buyer's account instantly; they get a message in the city next time they're on.
-- Packages are saved as waiting on setup. Staff finish them and run `/storedone PM-XXXXXX`
-  in the city, or mark the order fulfilled in the owner dashboard.
-- A full refund takes the coins back and revokes packages automatically. Partial refunds are
-  flagged for staff.
-- A chargeback takes that order's coins back right away (so they can't be spent) and alerts staff.
-  If you win it, the coins are given back; if you lose, packages and priority are revoked.
-- If a payment was already refunded or disputed by the time its order is recorded, nothing is handed out.
+1. The buyer adds coins on the site and presses **Continue to checkout**.
+2. Tebex asks them to sign in with their FiveM (Cfx.re) account, then they pay on Tebex.
+3. Tebex runs `pmv2_tebex` on the server. The coins are credited to the wallet of the Discord
+   account that FiveM account plays with - right away if they're online, otherwise the next time
+   they load in. Each Tebex transaction can only be credited once.
+4. Refunds and chargebacks run `pmv2_tebex_reverse`, which takes those coins back.
+
+Payments, refunds, coupons, sales and payouts are all managed in the Tebex control panel.
+
+### Optional: coin balance on the checkout page
+Set the store database (`DB_*` or `DATABASE_URL`) and Discord login (`DISCORD_CLIENT_ID`,
+`DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, `CUSTOMER_SESSION_SECRET`) and players can log in
+with Discord on the checkout page to see their balance. Checkout works without it.
 
 ## Store intro music
 The intro plays "Misfits After Dark", an original beat generated in the browser (no files, nothing to license).

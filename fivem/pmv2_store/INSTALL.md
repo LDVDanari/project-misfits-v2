@@ -1,6 +1,6 @@
 # pmv2_store — Install
 
-Delivers projectmisfitsrp.com purchases in the city.
+Delivers projectmisfitsrp.com / Tebex purchases in the city.
 
 - Links each player's Discord account to their character
 - Hands over anything waiting for them (coin messages, items) while they're online
@@ -20,6 +20,31 @@ Needs: `qbx_core`, `ox_lib`, `oxmysql` (and `ox_inventory` for item deliveries).
 
 Players need the **Discord app open** when they launch FiveM. That's how the city knows
 which Discord account they bought with. If it can't see Discord, `/coins` tells them how to fix it.
+
+## Tebex (Misfit Coin purchases)
+Payments go through Tebex. Tebex runs a console command on the server for each purchase.
+
+1. Link the server to Tebex: add `sv_tebexSecret <your secret>` at the **bottom** of `server.cfg`
+   (Tebex control panel -> Integrations -> Game Servers -> FiveM).
+2. On **each coin package** in Tebex, add this command and tick **execute even if the player is offline**:
+   ```
+   pmv2_tebex {id} {transaction} {packageId} {purchaseQuantity} 10
+   ```
+   Change the last number to the coins in one of that package (10, 25, 50, 100, 250, 500).
+3. Under the package's **Chargeback** and **Refund** commands, add the same line with `pmv2_tebex_reverse`:
+   ```
+   pmv2_tebex_reverse {id} {transaction} {packageId} {purchaseQuantity} 10
+   ```
+
+What happens:
+- `{id}` is the buyer's FiveM (Cfx.re) account. The coins go to the store wallet of the Discord
+  account that FiveM account plays with - right away if they're online, otherwise when they next load in.
+- If FiveM can't see their Discord, they're told to open Discord and reconnect; the coins wait.
+- Each transaction is only ever credited once, even if Tebex sends the command again.
+- A refund/chargeback takes the coins back (balance can go negative if they already spent them).
+  A refund that lands before the coins were credited cancels the purchase.
+- Every purchase and reversal is posted to `Config.LogWebhook` with the balance before -> after.
+- The `pmv2_store_tebex` table is created automatically.
 
 ## Discord logs
 Put a channel webhook URL in `Config.LogWebhook` (config.lua). It logs:
