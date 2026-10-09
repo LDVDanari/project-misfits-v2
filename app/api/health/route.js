@@ -14,11 +14,17 @@ export async function GET() {
   if (!tebexReady()) missing.push('TEBEX_PUBLIC_TOKEN');
 
   let tebexReachable = false, tebexPackages = 0, liveItems = 0, tebexError = null;
+  let tebexPackageNames = [], unmatched = [];
   if (tebexReady()) {
     try {
-      tebexPackages = (await getTebexPackages()).length;
+      const pkgs = await getTebexPackages();
+      tebexPackages = pkgs.length;
+      tebexPackageNames = pkgs.slice(0, 30).map(p => String(p.name || ''));
       tebexReachable = true;
-      liveItems = (await getResolvedCatalog()).filter(x => x.active).length;
+      const catalog = await getResolvedCatalog();
+      liveItems = catalog.filter(x => x.active).length;
+      const used = new Set(catalog.map(x => x.tebex_package_id).filter(Boolean));
+      unmatched = pkgs.filter(p => !used.has(String(p.id))).slice(0, 30).map(p => String(p.name || ''));
     } catch (e) {
       tebexError = e.message;
     }
@@ -33,6 +39,8 @@ export async function GET() {
       tebex: tebexReady(),
       tebexReachable,
       tebexPackages,
+      tebexPackageNames,
+      ...(unmatched.length ? { tebexNotOnSite: unmatched } : {}),
       liveItems,
       ...(tebexError ? { tebexError } : {}),
       checkoutReady: tebexReachable && liveItems > 0,
