@@ -3,8 +3,10 @@ import { getResolvedCatalog } from '../../../lib/catalogServer';
 import { publicOrigin } from '../../../lib/origin';
 import { readCustomer } from '../../../lib/customerSession';
 import {
-  tebexReady, createBasket, addBasketPackage, getBasketAuthUrl, basketAuthorized
+  tebexReady, createBasket, addBasketPackage, getBasketAuthUrl, basketAuthorized, clientIp
 } from '../../../lib/tebex';
+
+const step = (name, promise) => promise.catch(e => { e.message = e.message.replace(/^Tebex:/, `Tebex (${name}):`); throw e; });
 
 export const runtime = 'nodejs';
 
@@ -30,23 +32,24 @@ export async function POST(req) {
 
     const origin = publicOrigin(req);
     const customer = readCustomer(req); // optional - only used for our own records
-    const basket = await createBasket({
+    const basket = await step('create basket', createBasket({
+      ipAddress: clientIp(req),
       completeUrl: origin + '/checkout/success',
       cancelUrl: origin + '/checkout?canceled=1',
       custom: {
         source: 'projectmisfitsrp.com',
         ...(customer ? { discord_id: customer.id, discord_username: String(customer.username || '').slice(0, 64) } : {})
       }
-    });
+    }));
 
     let current = basket;
     for (const r of rows) {
-      current = await addBasketPackage(basket.ident, r.product.tebex_package_id, r.qty);
+      current = await step('add ' + r.product.title, addBasketPackage(basket.ident, r.product.tebex_package_id, r.qty));
     }
 
     let url = basketAuthorized(current) ? current?.links?.checkout : null;
     if (!url) {
-      url = await getBasketAuthUrl(basket.ident, origin + '/api/checkout/continue?basket=' + encodeURIComponent(basket.ident));
+      url = await step('sign-in link', getBasketAuthUrl(basket.ident, origin + '/api/checkout/continue?basket=' + encodeURIComponent(basket.ident)));
     }
     if (!url) url = current?.links?.checkout || basket?.links?.checkout;
     if (!url) throw new Error('Tebex did not return a checkout link. Please try again.');
@@ -57,6 +60,7 @@ export async function POST(req) {
     });
     return res;
   } catch (e) {
+    console.error('[checkout]', e.message, e.body ? JSON.stringify(e.body).slice(0, 500) : '');
     return NextResponse.json({ error: e.message || 'Unable to start checkout.' }, { status: 400 });
   }
 }
