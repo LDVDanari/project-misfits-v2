@@ -450,6 +450,262 @@ end)
 exports('GetDiscordId', discordOf)
 
 -- ------------------------------------------------------------
+-- Tebex purchases
+-- ------------------------------------------------------------
+-- Tebex (the payment processor) runs these from the server console. Set them on each
+-- coin package in the Tebex control panel ("execute even if the player is offline"):
+--   pmv2_tebex {id} {transaction} {packageId} {purchaseQuantity} <coins in one package>
+--   pmv2_tebex_reverse {id} {transaction} {packageId} {purchaseQuantity} <coins in one package>   (refund + chargeback)
+-- {id} is the buyer's FiveM (Cfx.re) account. Every purchase is saved first, then credited to
+-- the Discord-linked wallet of whoever plays on that FiveM account: right away if they're
+-- online, otherwise the next time they load in. A transaction is only ever credited once.
+
+local NO_DISCORD_TEBEX = 'Your store purchase is waiting! Open the Discord app before launching FiveM, then reconnect so we know which account to credit.'
+local tebexBusy, tebexWarned = {}, {}
+
+MySQL.ready(function()
+    MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS pmv2_store_tebex (
+            id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            tx_key         VARCHAR(160) NOT NULL,
+            kind           ENUM('purchase','reversal') NOT NULL,
+            transaction_id VARCHAR(64)  NOT NULL,
+            package_id     VARCHAR(32)  NOT NULL,
+            identifier     VARCHAR(64)  NOT NULL,
+            quantity       INT UNSIGNED NOT NULL DEFAULT 1,
+            coins          INT UNSIGNED NOT NULL,
+            status         ENUM('pending','delivered','canceled') NOT NULL DEFAULT 'pending',
+            discord_id     VARCHAR(32)  NULL,
+            created_at     DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+            delivered_at   DATETIME(3)  NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_tebex_tx (tx_key),
+            KEY idx_tebex_pending (status, identifier)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ]])
+end)
+
+-- "123" -> "fivem:123"; "license:abc" stays as-is.
+local function tebexIdentifier(raw)
+    raw = tostring(raw or ''):gsub('%s', '')
+    local kind, value = raw:match('^(%a%w*):([%w]+)$')
+    if kind then return kind:lower() .. ':' .. value end
+    if raw:match('^%d+$') then return 'fivem:' .. raw end
+    return nil
+end
+
+local function onlineByIdentifier(identifier)
+    for _, s in ipairs(GetPlayers()) do
+        local src = tonumber(s)
+        for _, id in ipairs(GetPlayerIdentifiers(src)) do
+            if id == identifier then return src end
+        end
+    end
+    return nil
+end
+
+local function parseTebexArgs(args)
+    local identifier = tebexIdentifier(args[1])
+    local tx = tostring(args[2] or ''):match('^[%w%-_%.]+$')
+    local pkg = tostring(args[3] or ''):match('^[%w%-_]+$')
+    local qty = math.floor(tonumber(args[4]) or 0)
+    local per = math.floor(tonumber(args[5]) or 0)
+    if not identifier or not tx or not pkg or qty < 1 or qty > 1000 or per < 1 or per > 1000000 then return nil end
+    return { identifier = identifier, tx = tx:sub(1, 64), pkg = pkg:sub(1, 32), qty = qty, coins = per * qty }
+end
+
+local function waitReady()
+    local t = 0
+    while not ready and t < 60 do Wait(1000); t = t + 1 end
+    return ready
+end
+
+-- Ledger row + wallet change in one transaction. The unique idempotency key means a second
+-- attempt for the same purchase fails instead of paying twice. Reversals have no floor:
+-- if refunded coins were already spent the balance goes negative (by design).
+local function tebexLedger(customerId, delta, reason, reference, key)
+    local ok, done = pcall(MySQL.transaction.await, {
+        {
+            query = [[INSERT INTO pmv2_store_coin_ledger (customer_id, delta, reason, balance_after, reference, idempotency_key, actor)
+                      SELECT customer_id, ?, ?, balance + ?, ?, ?, 'tebex' FROM pmv2_store_wallets WHERE customer_id = ? FOR UPDATE]],
+            values = { delta, reason, delta, reference:sub(1, 128), key, customerId }
+        },
+        {
+            query = 'UPDATE pmv2_store_wallets SET balance = balance + ?, lifetime_purchased = lifetime_purchased + ? WHERE customer_id = ?',
+            values = { delta, delta > 0 and delta or 0, customerId }
+        }
+    })
+    local entry = MySQL.single.await('SELECT balance_after FROM pmv2_store_coin_ledger WHERE idempotency_key = ?', { key })
+    if entry then return tonumber(entry.balance_after), ok and done end
+    return nil, tostring(done)
+end
+
+local function deliverTebex(row, src)
+    if row.status ~= 'pending' or tebexBusy[row.tx_key] then return false end
+    local discordId = discordOf(src)
+    if not discordId then
+        if not tebexWarned[src] then
+            tebexWarned[src] = true
+            notify(src, NO_DISCORD_TEBEX, 'error', 15000)
+        end
+        return false
+    end
+
+    tebexBusy[row.tx_key] = true
+    local customerId = ensureCustomer(discordId, true)
+    local after, fresh = nil, false
+    if customerId then
+        after, fresh = tebexLedger(customerId, row.coins, 'purchase', ('Tebex %s'):format(row.transaction_id), 'tebex:' .. row.tx_key)
+    end
+    tebexBusy[row.tx_key] = nil
+    if not after then
+        log(('Tebex %s: could not credit %s yet: %s'):format(row.transaction_id, discordId, tostring(fresh)))
+        return false
+    end
+
+    MySQL.update.await(
+        "UPDATE pmv2_store_tebex SET status = 'delivered', discord_id = ?, delivered_at = CURRENT_TIMESTAMP(3) WHERE id = ?",
+        { discordId, row.id }
+    )
+    if fresh then
+        audit('tebex', 'coins.purchase', 'customer', discordId, { coins = row.coins, transaction = row.transaction_id, package = row.package_id })
+        sendLog(('%s purchased'):format(Config.CoinName), COLORS.add, {
+            { 'Player', who(src) },
+            { 'Coins', ('+%d (%dx package %s)'):format(row.coins, row.quantity, row.package_id), true },
+            { 'Balance', balanceLine(after - row.coins, after), true },
+            { 'Transaction', row.transaction_id, true }
+        })
+        notify(src, ('Thanks for your purchase! %d %s were added to your account.'):format(row.coins, Config.CoinName), 'success', 12000)
+    end
+    return true
+end
+
+-- Credits any waiting purchases for players who are online now.
+local function processTebex(onlySrc)
+    if not ready then return end
+    local rows = MySQL.query.await("SELECT * FROM pmv2_store_tebex WHERE kind = 'purchase' AND status = 'pending' ORDER BY id LIMIT 200") or {}
+    for _, row in ipairs(rows) do
+        local src = onlineByIdentifier(row.identifier)
+        if src and (not onlySrc or src == onlySrc) then deliverTebex(row, src) end
+    end
+end
+
+CreateThread(function()
+    while not ready do Wait(1000) end
+    while true do
+        local ok, err = pcall(processTebex)
+        if not ok then log('Tebex check failed: ' .. tostring(err)) end
+        Wait(math.max(10, Config.CheckSeconds) * 1000)
+    end
+end)
+
+AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
+    local src = player and player.PlayerData and player.PlayerData.source
+    if src then SetTimeout(6000, function() pcall(processTebex, src) end) end
+end)
+
+AddEventHandler('playerDropped', function()
+    tebexWarned[source] = nil
+end)
+
+RegisterCommand('pmv2_tebex', function(source, args)
+    if source ~= 0 then return end
+    local p = parseTebexArgs(args)
+    if not p then
+        log('pmv2_tebex: wrong format. Use: pmv2_tebex {id} {transaction} {packageId} {purchaseQuantity} <coins per package>')
+        return
+    end
+    CreateThread(function()
+        if not waitReady() then
+            log(('pmv2_tebex: store tables missing - purchase %s was NOT recorded. Run db/pmv2_store.sql.'):format(p.tx))
+            return
+        end
+        local key = ('buy:%s:%s'):format(p.tx, p.pkg)
+        MySQL.insert.await(
+            "INSERT IGNORE INTO pmv2_store_tebex (tx_key, kind, transaction_id, package_id, identifier, quantity, coins) VALUES (?, 'purchase', ?, ?, ?, ?, ?)",
+            { key, p.tx, p.pkg, p.identifier, p.qty, p.coins }
+        )
+        local row = MySQL.single.await('SELECT * FROM pmv2_store_tebex WHERE tx_key = ?', { key })
+        if not row then return log(('pmv2_tebex: could not save purchase %s'):format(p.tx)) end
+        if row.status ~= 'pending' then return log(('Tebex %s already %s - skipped.'):format(p.tx, row.status)) end
+
+        -- Refunded before it was ever credited
+        if MySQL.scalar.await('SELECT COUNT(*) FROM pmv2_store_tebex WHERE tx_key = ?', { ('rev:%s:%s'):format(p.tx, p.pkg) }) > 0 then
+            MySQL.update.await("UPDATE pmv2_store_tebex SET status = 'canceled' WHERE id = ?", { row.id })
+            return log(('Tebex %s was already refunded - not credited.'):format(p.tx))
+        end
+
+        log(('Tebex purchase %s: %d %s for %s'):format(p.tx, p.coins, Config.CoinName, p.identifier))
+        local src = onlineByIdentifier(p.identifier)
+        if src and deliverTebex(row, src) then return end
+        sendLog(('%s purchase received'):format(Config.CoinName), COLORS.delivery, {
+            { 'FiveM account', p.identifier, true },
+            { 'Coins', p.coins, true },
+            { 'Transaction', p.tx, true }
+        }, src and 'Buyer is online but FiveM can\'t see their Discord - credited once it can.'
+            or 'Buyer is offline - the coins are credited the next time they load in.')
+    end)
+end, true)
+
+RegisterCommand('pmv2_tebex_reverse', function(source, args)
+    if source ~= 0 then return end
+    local p = parseTebexArgs(args)
+    if not p then
+        log('pmv2_tebex_reverse: wrong format. Use the same arguments as pmv2_tebex.')
+        return
+    end
+    CreateThread(function()
+        if not waitReady() then
+            log(('pmv2_tebex_reverse: store tables missing - reversal %s NOT applied.'):format(p.tx))
+            return
+        end
+        local revKey = ('rev:%s:%s'):format(p.tx, p.pkg)
+        MySQL.insert.await(
+            "INSERT IGNORE INTO pmv2_store_tebex (tx_key, kind, transaction_id, package_id, identifier, quantity, coins) VALUES (?, 'reversal', ?, ?, ?, ?, ?)",
+            { revKey, p.tx, p.pkg, p.identifier, p.qty, p.coins }
+        )
+        local rev = MySQL.single.await('SELECT * FROM pmv2_store_tebex WHERE tx_key = ?', { revKey })
+        if not rev or rev.status ~= 'pending' then return end
+        local buy = MySQL.single.await('SELECT * FROM pmv2_store_tebex WHERE tx_key = ?', { ('buy:%s:%s'):format(p.tx, p.pkg) })
+
+        -- Never credited (or unknown): make sure it never pays out.
+        if not buy or buy.status ~= 'delivered' then
+            if buy and buy.status == 'pending' then
+                MySQL.update.await("UPDATE pmv2_store_tebex SET status = 'canceled' WHERE id = ?", { buy.id })
+            end
+            MySQL.update.await("UPDATE pmv2_store_tebex SET status = 'delivered', delivered_at = CURRENT_TIMESTAMP(3) WHERE id = ?", { rev.id })
+            log(('Tebex %s refunded/charged back before delivery - nothing to take back.'):format(p.tx))
+            return sendLog('Tebex purchase canceled', COLORS.remove, {
+                { 'FiveM account', p.identifier, true }, { 'Transaction', p.tx, true }
+            }, 'Refunded or charged back before the coins were credited. Nothing was taken back.')
+        end
+
+        local customer = MySQL.single.await('SELECT id FROM pmv2_store_customers WHERE discord_id = ?', { buy.discord_id })
+        if not customer then return log(('Tebex %s: customer %s not found for reversal'):format(p.tx, tostring(buy.discord_id))) end
+        local after, fresh = tebexLedger(customer.id, -buy.coins, 'refund', ('Tebex refund/chargeback %s'):format(p.tx), 'tebex:' .. revKey)
+        if not after then return log(('Tebex %s: reversal failed: %s'):format(p.tx, tostring(fresh))) end
+
+        MySQL.update.await(
+            "UPDATE pmv2_store_tebex SET status = 'delivered', discord_id = ?, delivered_at = CURRENT_TIMESTAMP(3) WHERE id = ?",
+            { buy.discord_id, rev.id }
+        )
+        if fresh then
+            audit('tebex', 'coins.refund', 'customer', buy.discord_id, { coins = -buy.coins, transaction = p.tx })
+            local _, online = resolveTarget(buy.discord_id)
+            sendLog(('%s taken back (Tebex refund/chargeback)'):format(Config.CoinName), COLORS.remove, {
+                { 'Player', online and who(online) or ('<@%s>'):format(buy.discord_id) },
+                { 'Coins', -buy.coins, true },
+                { 'Balance', balanceLine(after + buy.coins, after), true },
+                { 'Transaction', p.tx, true }
+            })
+            if online then
+                notify(online, ('%d %s were removed because a store payment was refunded or charged back.'):format(buy.coins, Config.CoinName), 'inform', 12000)
+            end
+        end
+    end)
+end, true)
+
+-- ------------------------------------------------------------
 -- Commands
 -- ------------------------------------------------------------
 
