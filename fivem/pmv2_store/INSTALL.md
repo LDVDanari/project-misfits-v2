@@ -1,16 +1,16 @@
 # pmv2_store — Install
 
 Everything Misfit Coins in one resource: projectmisfitsrp.com / Tebex purchases, the coin wallet,
-and the in-city VIP shop with VIP tiers. (This replaces `misfits_vip`. See "Moving off misfits_vip" below.)
+and the in-city VIP shop + vehicle showroom. (This replaces `misfits_vip`. See "Moving off misfits_vip" below.)
 
 - Links each player's Discord account to their character
-- Hands over anything waiting for them (coin messages, items, VIP time) while they're online
+- Hands over anything waiting for them (coin messages, items) while they're online
 - One Misfit Coins balance: the webstore, `/coins`, the VIP shop and staff commands all use the same wallet
-- In-city VIP shop: store peds (main + guns), vehicle showroom, VIP tiers + perks, vouchers, purchase limits
-- `/coins` for players, plus exports so other scripts can spend coins and read VIP tiers
+- In-city VIP shop: store peds (main + guns), purchase limits, and a vehicle showroom with buy + test drive
+- `/coins` for players, plus exports so other scripts can spend coins
 - Staff tools: `/coinsadd`, `/coinsremove`, `/storelookup`, `/storedone`, `/vipadmin`
 
-Needs: `qbx_core`, `ox_lib`, `oxmysql`, `ox_inventory`, `ox_target`.
+Needs: `qbx_core`, `qbx_vehicles`, `ox_lib`, `oxmysql`, `ox_inventory`, `ox_target` (and `qbx_vehiclekeys` for showroom keys).
 
 ## Install
 1. Run `db/pmv2_store.sql` (in the website repo) on the **same database** your server uses.
@@ -50,43 +50,62 @@ What happens:
 - The `pmv2_store_tebex` table is created automatically.
 
 ## VIP shop
-Players walk up to a store ped (or a showroom car) and use ox_target. There's no command to open it.
+Players walk up to a store ped and use ox_target. There's no command to open it.
 Everything is paid with Misfit Coins from the store wallet. There is **no /redeem**: coins bought on the
 website arrive in the wallet on their own (see Tebex above), and the shop just spends them.
+Only the main VIP Store has a map blip.
 
 | File | What's in it |
 |---|---|
-| `config/vip.lua` | Economy mode (coins / vouchers / both), `/vipadmin` permission, garage for bought cars |
-| `config/vip_tiers.lua` | VIP tiers (Bronze/Silver/Gold), their perks, voucher pools |
-| `config/vip_shop.lua` | Categories and every item for sale (price, VIP lock, buy limit, rewards) |
-| `config/vip_locations.lua` | Store peds/blips (main store, gun store) and the vehicle showroom slots |
+| `config/vip.lua` | Economy mode (coins / vouchers / both), voucher pools, `/vipadmin` permission, garage for bought cars |
+| `config/vip_shop.lua` | Categories and every item for sale (price, buy limit, rewards, showroom car specs) |
+| `config/vip_locations.lua` | Store peds/blips (main store, gun store) and the vehicle showroom |
 | `config/vip_theme.lua` | Logo, colors, webstore button, home page text |
 | `config/vip_locale.lua` | Every message |
-| `config/vip_handlers.lua` | Custom reward types + hooks (e.g. sync a VIP tier to an ACE group) |
+| `config/vip_handlers.lua` | Custom reward types + the OnPurchase hook |
 
 Item images: a bare filename (`lockpick.png`) loads from ox_inventory; `img/x.png` loads from `web/img/`.
 
 How a purchase works: the server checks the player is standing at that store, the item is sold there,
-their VIP tier, the buy limit and that they can carry it. Then it takes the coins (only if the balance
-covers it), delivers, and if delivery fails the coins go straight back. Coin purchases show up in the
-Discord log as "Misfit Coins spent" with the item and balance before → after.
+the buy limit and that they can carry it. Then it takes the coins (only if the balance covers it),
+delivers, and if delivery fails the coins go straight back. Coin purchases show up in the Discord log as
+"Misfit Coins spent" with the item and balance before → after.
 
-VIP tiers, vouchers and buy limits are saved per **character** (citizenid). Coins are per **Discord account**.
+Vouchers and buy limits are saved per **character** (citizenid). Coins are per **Discord account**.
 
-### VIP time from the website
-Add a delivery row with action `grant_tier` and a payload like `{"tier":"gold","days":30,"message":"Gold VIP is active!"}`
-(`days` 0 = lifetime). It's handed out like any other delivery the next time they're online.
+## Vehicle showroom
+Display cars sit at `Config.Showroom.vehicles`. Walk up to one and a panel slides in on the left with
+the car's name, top speed, acceleration/braking/handling bars, its specs and price.
+
+- **G**: buy. The first press arms it ("Press again to confirm"). Press **G** again within
+  `confirmSeconds` and the coins are taken, the car is saved as theirs (qbx_vehicles, garage
+  `Config.Vehicles.garage`) and they're put in it outside with the keys and a full tank.
+- **B**: test drive. They're put in a loaner outside for `testDrive.seconds`, with a timer at the top of
+  the screen. When time's up (or they've been out of it for `leaveSeconds`) the screen fades, the car is
+  removed and they're back in the showroom. One test drive at a time, `testDrive.cooldown` between them.
+
+Each showroom car is an item in `config/vip_shop.lua` (category `vehicles`) with a `{ type = 'vehicle', model = '...' }`
+reward. Its `price`, `limit` and `specs` are what the panel shows. Add a car = add an item + a slot.
+
+**Set the spawn point before going live.** Stand where bought/test cars should appear, facing the way
+they should face, and type `/showroomspot` (admin). It copies a line like `vector4(540.20, -3066.50, 5.95, 270.00),`
+to your clipboard: paste it into `Config.Showroom.spawns`. Add 2-3 spots so one parked car doesn't block
+purchases (the first clear one is used; if they're all blocked the player isn't charged and is told to move it).
+
+If the car can't be spawned for any reason, the purchase still goes through and the car waits in their garage.
 
 ### Moving off misfits_vip
 1. Stop it and take it out of `server.cfg`: delete the `ensure misfits_vip` line and the `misfits_vip` folder.
 2. Delete these lines from `server.cfg` if you added them: `set misfits_vip:tebex_secret ...` and `set misfits_vip:webhook ...`.
    Tebex keeps using `sv_tebexSecret` and the `pmv2_tebex` package commands above. Remove any old
    misfits_vip package commands in Tebex (the `/redeem` flow is gone).
-3. Restart `pmv2_store`. It uses the same `misfits_vip_*` tables, so VIP tiers and purchase history carry over.
+3. Restart `pmv2_store`. It uses the same `misfits_vip_*` tables, so purchase history (buy limits) carries over.
+   VIP tiers are gone, so any tiers people had in misfits_vip no longer do anything.
 4. Any coins a character still had in the old misfits_vip balance are moved into that player's store wallet
    the next time they load in (logged as "Moved from old misfits_vip balance"). Turn this off with
    `Config.MoveOldVipCoins = false`.
-5. Scripts that used `exports.misfits_vip:...` should now use `exports.pmv2_store:...` (same names).
+5. Scripts that used `exports.misfits_vip:GiveVoucher` should use `exports.pmv2_store:GiveVoucher`. The tier exports
+   (IsVip, GetTier, HasTier, GetPerk...) were removed with the tiers.
 
 ## Discord logs
 Put a channel webhook URL in `Config.LogWebhook` (config.lua). It logs:
@@ -94,7 +113,7 @@ Put a channel webhook URL in `Config.LogWebhook` (config.lua). It logs:
 - **Coins added / removed**: by staff (with reason) or by a script, balance before → after
 - **Store deliveries** received in the city, and any that **failed**
 - **Packages set up** with `/storedone`
-- **VIP shop**: failed deliveries (with the refund), voucher purchases and `/vipadmin` actions
+- **VIP shop**: showroom cars bought (with plate), failed deliveries (with the refund), voucher purchases and `/vipadmin` actions
 
 Use the same webhook as the website's `STORE_ORDERS_WEBHOOK_URL` to keep everything in one channel
 (website purchases also show the balance before → after).
@@ -107,11 +126,10 @@ Use the same webhook as the website's `STORE_ORDERS_WEBHOOK_URL` to keep everyth
 | `/coinsremove [id or Discord ID] [amount] [reason]` | Staff | Takes coins (never below 0) |
 | `/storelookup [id, Discord ID or order code]` | Staff | Orders, coins, packages waiting on setup, stuck deliveries (prints to F8) |
 | `/storedone [order code]` | Staff | Marks a package order as set up and tells the buyer |
-| `/vipadmin info [id or citizenid]` | Admin | VIP tier, expiry, coins and voucher picks |
-| `/vipadmin givetier [id or citizenid] [tier] [days]` | Admin | Gives VIP (days 0 = lifetime). Same tier extends, higher tier replaces |
-| `/vipadmin removetier [id or citizenid]` | Admin | Removes their VIP |
+| `/vipadmin info [id or citizenid]` | Admin | Coins, voucher picks and what they've bought |
 | `/vipadmin givevoucher [id or citizenid] [pool] [picks] [expiry days]` | Admin | Gives voucher picks |
-| `/vipadmin tiers` / `/vipadmin pools` | Admin | Lists valid names |
+| `/vipadmin pools` | Admin | Lists voucher pool names |
+| `/showroomspot` | Admin | Copies your position as a showroom spawn point |
 
 Staff = `Config.StaffGroups` in `config.lua` (default `group.admin`). Every staff coin change
 is saved with who did it and why. `/vipadmin` uses `Config.Admin.restricted` in `config/vip.lua`.
@@ -132,17 +150,8 @@ end
 -- Give coins (event prizes etc.). Target = server ID or Discord ID
 exports.pmv2_store:AddCoins(source, 10, 'Car meet winner')
 
--- VIP tiers (per character)
-exports.pmv2_store:IsVip(source)                         -- true / false
-exports.pmv2_store:GetTier(source)                       -- 'gold' or nil
-exports.pmv2_store:HasTier(source, 'silver')             -- silver or higher
-exports.pmv2_store:GetPerk(source, 'paycheckMultiplier', 1.0)
-exports.pmv2_store:GetVipInfo(source)                    -- { tier, label, expiresAt, coins }
-exports.pmv2_store:GrantTier(citizenid, 'gold', 30)      -- days 0 = lifetime
-exports.pmv2_store:RemoveTier(citizenid)
+-- Voucher picks (only if Config.Economy.mode uses vouchers)
 exports.pmv2_store:GiveVoucher(citizenid, 'monthly_pick', 1, 45)
--- Server event when a tier changes: AddEventHandler('pmv2_store:vipTierChanged', function(citizenid, oldTier, newTier) end)
--- Client: LocalPlayer.state.vipTier
 
 -- Add a new delivery type, e.g. vehicles from a future store item
 exports.pmv2_store:RegisterDeliveryHandler('give_vehicle', function(source, payload, row)

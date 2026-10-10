@@ -1,7 +1,8 @@
 DB = {}
 
--- VIP tiers, vouchers and purchase limits are kept per character (citizenid).
--- The table names are the same ones misfits_vip used, so existing tiers and purchase history carry over.
+-- Vouchers and purchase limits are kept per character (citizenid).
+-- The table names are the same ones misfits_vip used, so purchase history carries over.
+-- misfits_vip_players is only read for old coin balances (see init.lua).
 -- Coins are NOT stored here: they live in the store wallet (pmv2_store_wallets).
 
 local schema = {
@@ -42,19 +43,7 @@ function DB.Init()
     end
 end
 
--- ── Players ──────────────────────────────────────────────────
-function DB.GetPlayer(citizenid)
-    return MySQL.single.await('SELECT tier, expires_at FROM misfits_vip_players WHERE citizenid = ?', { citizenid })
-end
-
-function DB.SetTier(citizenid, tier, expiresAt)
-    MySQL.update.await(
-        [[INSERT INTO misfits_vip_players (citizenid, tier, expires_at) VALUES (?, ?, ?)
-          ON DUPLICATE KEY UPDATE tier = VALUES(tier), expires_at = VALUES(expires_at)]],
-        { citizenid, tier, expiresAt }
-    )
-end
-
+-- ── Old misfits_vip balances ────────────────────────────────
 --- Old misfits_vip coin balance. Zeroes it in the same statement that reads it,
 --- so only one caller ever gets the amount. Returns the amount (0 if none).
 function DB.TakeOldCredits(citizenid)
@@ -70,13 +59,6 @@ end
 
 function DB.RestoreOldCredits(citizenid, amount)
     MySQL.update.await('UPDATE misfits_vip_players SET credits = credits + ? WHERE citizenid = ?', { amount, citizenid })
-end
-
-function DB.ExpiredTiers(now)
-    return MySQL.query.await(
-        'SELECT citizenid, tier FROM misfits_vip_players WHERE tier IS NOT NULL AND expires_at IS NOT NULL AND expires_at <= ?',
-        { now }
-    ) or {}
 end
 
 -- ── Vouchers ─────────────────────────────────────────────────

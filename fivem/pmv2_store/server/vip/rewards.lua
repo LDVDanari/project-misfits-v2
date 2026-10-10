@@ -16,10 +16,6 @@ local function pluralLabel(r)
         return ('$%s (%s)'):format(commas(r.amount), r.account or 'bank')
     elseif r.type == 'vehicle' then
         return ('Vehicle: %s'):format(r.model)
-    elseif r.type == 'tier' then
-        local t = Config.Tiers[r.tier]
-        local label = t and t.label or r.tier
-        return (r.days and r.days > 0) and ('%s VIP +%d days'):format(label, r.days) or ('%s VIP (lifetime)'):format(label)
     elseif r.type == 'voucher' then
         local p = Config.Pools[r.pool]
         return ('%dx %s'):format(r.picks or 1, p and p.label or r.pool)
@@ -61,8 +57,6 @@ function Rewards.Apply(src, citizenid, r, sourceTag)
     elseif t == 'vehicle' then
         local ok, res = Bridge.AddVehicle(src, r.model, r.garage)
         return ok, ok and nil or res
-    elseif t == 'tier' then
-        return VIP.GrantTier(citizenid, r.tier, r.days)
     elseif t == 'voucher' then
         return Vouchers.Give(citizenid, r.pool, r.picks or 1, r.expiresDays, sourceTag or 'reward')
     elseif t == 'credits' then

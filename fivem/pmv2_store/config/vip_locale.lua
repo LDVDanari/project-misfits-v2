@@ -9,7 +9,6 @@ Locale = {
         no_discord         = 'We can\'t see your Discord account. Open the Discord app before launching FiveM, then reconnect.',
 
         item_not_found     = 'Item no longer exists.',
-        tier_locked        = 'Requires %s VIP or higher.',
         limit_reached      = 'You already own the maximum of this item.',
         cant_carry         = 'You cannot carry that right now.',
         no_payment         = 'Not enough coins.',
@@ -19,8 +18,14 @@ Locale = {
         delivery_failed    = 'Delivery failed, you were not charged.',
         purchased          = 'Purchased.',
 
-        tier_granted       = 'VIP status updated: %s.',
-        tier_expired       = 'Your %s VIP has expired.',
+        -- showroom
+        car_bought         = 'It\'s yours! Your %s is waiting outside.',
+        car_bought_garage  = 'It\'s yours! Your %s is in your garage (%s).',
+        spawn_blocked      = 'Something is parked in the delivery spot. Move it and try again.',
+        test_busy          = 'You are already on a test drive.',
+        test_cooldown      = 'You can test drive again in %d seconds.',
+        test_failed        = 'The test car could not be brought out. Try again in a moment.',
+        test_over          = 'Test drive over. Hope you liked it!',
     },
 
     -- Strings used by the NUI.
@@ -49,16 +54,26 @@ Locale = {
         no_items         = 'Nothing for sale here yet.',
         picks            = 'picks',
 
+        -- showroom panel
         showroom_kicker  = 'MISFITS VIP SHOWROOM',
-        vehicle_note     = 'Purchased vehicles are delivered straight to your garage.',
-        buy_vehicle      = 'Purchase Vehicle',
+        sr_buy           = 'Buy',
+        sr_confirm       = 'Press again to confirm',
+        sr_confirm_text  = 'Spend %s on this car? It spawns outside.',
+        sr_test          = 'Test Drive',
+        sr_cancel        = 'Cancel',
+        sr_owned         = 'Already owned',
+        sr_short         = 'Not enough coins',
+        sr_working       = 'Working...',
+        sr_balance       = 'Your balance',
+        sr_top_speed     = 'Top Speed',
+        sr_accel         = 'Acceleration',
+        sr_braking       = 'Braking',
+        sr_handling      = 'Handling',
+        sr_test_left     = 'TEST DRIVE',
+        sr_test_hint     = 'Get out of the car to end it early',
 
         settings_account = 'ACCOUNT',
         settings_prefs   = 'PREFERENCES',
-        vip_tier         = 'VIP Tier',
-        expires          = 'Expires',
-        lifetime         = 'Lifetime',
-        none             = 'None',
         pref_confirm     = 'Confirm before purchasing',
         pref_motion      = 'Reduce animations',
         pref_scale       = 'Interface size',
@@ -69,7 +84,7 @@ Locale = {
     },
 }
 
--- Usage: L('tier_locked', 'Gold')
+-- Usage: L('cart_too_big', 10)
 function L(key, ...)
     local s = Locale.server[key] or key
     if select('#', ...) > 0 then

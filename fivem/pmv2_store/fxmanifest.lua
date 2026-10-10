@@ -4,14 +4,14 @@ lua54 'yes'
 
 name 'pmv2_store'
 author 'Project Misfits v2'
-description 'projectmisfitsrp.com in the city: Misfit Coins wallet, Tebex + website deliveries, VIP shop, VIP tiers, staff tools'
-version '2.0.0'
+description 'projectmisfitsrp.com in the city: Misfit Coins wallet, Tebex + website deliveries, VIP shop, vehicle showroom, staff tools'
+version '2.1.0'
 
 shared_scripts {
     '@ox_lib/init.lua',
+    '@qbx_core/modules/lib.lua',
     'config.lua',
     'config/vip.lua',
-    'config/vip_tiers.lua',
     'config/vip_shop.lua',
     'config/vip_locations.lua',
     'config/vip_theme.lua',
@@ -29,9 +29,10 @@ server_scripts {
     'config/vip_handlers.lua',
     'server/vip/bridge.lua',
     'server/vip/database.lua',
-    'server/vip/tiers.lua',
+    'server/vip/vouchers.lua',
     'server/vip/rewards.lua',
     'server/vip/shop.lua',
+    'server/vip/showroom.lua',
     'server/vip/admin.lua',
     'server/vip/init.lua'
 }

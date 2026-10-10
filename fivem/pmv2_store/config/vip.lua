@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────
---  VIP SHOP + VIP TIERS  (in-city store, paid with Misfit Coins)
+--  VIP SHOP + SHOWROOM  (in-city store, paid with Misfit Coins)
 --
 --  Coins come from the store wallet in config.lua / server/main.lua:
 --  the same balance players top up on projectmisfitsrp.com, see with /coins,
@@ -7,9 +7,8 @@
 --  VIP balance and no /redeem: website purchases land in the wallet on their own.
 --
 --  Other VIP files:
---    config/vip_tiers.lua      tiers, perks, voucher pools
 --    config/vip_shop.lua       categories + everything for sale
---    config/vip_locations.lua  store peds/zones, blips, vehicle showroom
+--    config/vip_locations.lua  store peds/zones, blips, vehicle showroom (buy / test drive)
 --    config/vip_theme.lua      UI branding/colors
 --    config/vip_locale.lua     every message
 --    config/vip_handlers.lua   custom reward handlers + hooks (server only)
@@ -24,6 +23,11 @@
 Config.Economy = {
     mode        = 'credits',
     creditsName = Config.CoinName or 'Misfit Coins',
+}
+
+-- Voucher pools (only used if mode is 'voucher' or 'both')
+Config.Pools = {
+    monthly_pick = { label = 'Monthly Pick' },
 }
 
 -- ─────────────────────────────────────────────────────────────
@@ -44,9 +48,10 @@ Config.Shop = {
 }
 
 Config.Vehicles = {
-    -- Bought vehicles are inserted into the player's garage.
+    -- Bought vehicles are saved as owned (qbx_vehicles) under this garage. Showroom cars are then
+    -- spawned outside with the buyer in them; if that spawn fails the car waits in this garage instead.
     garage      = 'pillboxgarage',       -- must match a garage name in your garage resource
-    state       = 1,                     -- 1 = in garage
+    state       = 1,                     -- 1 = in garage (used by the fallback insert only)
     plateFormat = '1AA111AA',            -- ox_lib pattern: 1 = digit, A = letter, . = any
 }
 

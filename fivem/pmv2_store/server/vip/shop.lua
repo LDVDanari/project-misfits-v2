@@ -1,6 +1,7 @@
 Shop = {}
 
-local busy = {}          -- citizenid -> true while a request is processing
+local busy = {}          -- citizenid -> true while a request is processing (shared with the showroom)
+Shop.busy = busy
 local itemsById = {}
 
 local function indexItems()
@@ -14,20 +15,11 @@ local function indexItems()
 end
 indexItems()
 
-local function tierLabel(tier)
-    return Config.Tiers[tier] and Config.Tiers[tier].label or tostring(tier)
-end
+function Shop.Item(id) return itemsById[id] end
 
 local function modeAllows(method)
     local mode = Config.Economy.mode
     return mode == 'both' or mode == method
-end
-
-local function itemLocked(item, data)
-    if item.minTier and VIP.Rank(data.tier) < VIP.Rank(item.minTier) then
-        return true, L('tier_locked', tierLabel(item.minTier))
-    end
-    return false
 end
 
 local function categoryById(id)
@@ -37,7 +29,7 @@ local function categoryById(id)
 end
 
 -- ─────────────────────────────────────────────────────────────
---  CONTEXT: which store (or showroom slot) the player is using.
+--  CONTEXT: which store the player is using (showroom cars are in showroom.lua).
 --  The server re-checks the player's real position on EVERY request, so a
 --  modded client can't open or buy from a store it isn't standing at.
 -- ─────────────────────────────────────────────────────────────
@@ -62,37 +54,22 @@ local function resolveCtx(src, raw)
         }
     end
 
-    if raw.showroom ~= nil and Config.Showroom.enabled then
-        local idx = tonumber(raw.showroom)
-        local slot = idx and Config.Showroom.vehicles[idx]
-        if not slot then return nil, 'bad_store' end
-        if distanceTo(src, slot.coords) > Config.Interaction.maxDistance then return nil, 'too_far' end
-        return {
-            kind = 'showroom', key = idx, def = slot, label = 'Showroom',
-            allows = function(item) return item.id == slot.item end,
-        }
-    end
-
     return nil, 'bad_store'
 end
 
 local function buildPages(ctx)
     local ui = Locale.ui
     local pages = {}
-    if ctx.kind == 'showroom' then
-        pages[#pages + 1] = { id = 'vehicle', kind = 'vehicle', label = ui.nav_vehicle, icon = 'car', item = ctx.def.item }
-    else
-        -- `redeem` is the old misfits_vip name for this flag; still honored so old configs work
-        local showHome = ctx.def.home
-        if showHome == nil then showHome = ctx.def.redeem end
-        if showHome ~= false then
-            pages[#pages + 1] = { id = 'home', kind = 'home', label = ui.nav_home, icon = 'home' }
-        end
-        for _, catId in ipairs(ctx.def.categories or {}) do
-            local cat = categoryById(catId)
-            if cat then
-                pages[#pages + 1] = { id = cat.id, kind = 'category', category = cat.id, label = cat.label, icon = cat.icon or 'box' }
-            end
+    -- `redeem` is the old misfits_vip name for this flag; still honored so old configs work
+    local showHome = ctx.def.home
+    if showHome == nil then showHome = ctx.def.redeem end
+    if showHome ~= false then
+        pages[#pages + 1] = { id = 'home', kind = 'home', label = ui.nav_home, icon = 'home' }
+    end
+    for _, catId in ipairs(ctx.def.categories or {}) do
+        local cat = categoryById(catId)
+        if cat then
+            pages[#pages + 1] = { id = cat.id, kind = 'category', category = cat.id, label = cat.label, icon = cat.icon or 'box' }
         end
     end
     pages[#pages + 1] = { id = 'settings', kind = 'settings', label = ui.nav_settings, icon = 'gear' }
@@ -101,7 +78,7 @@ end
 
 local function heroFor(ctx)
     local base = Config.Theme.hero or {}
-    local over = (ctx.kind == 'shop' and ctx.def.hero) or {}
+    local over = ctx.def.hero or {}
     return {
         kicker = over.kicker or base.kicker,
         title  = over.title or base.title,
@@ -116,7 +93,6 @@ local function buildPayload(src, ctx)
     if not citizenid then return { error = L('no_player') } end
 
     MoveOldVipCoins(src, citizenid)
-    local data = VIP.Load(citizenid, true)
     local coins, coinErr = Store.GetCoins(src)
     local vouchers = Vouchers.List(citizenid)
     local counts = DB.PurchaseCounts(citizenid)
@@ -135,7 +111,6 @@ local function buildPayload(src, ctx)
     local items = {}
     for _, item in ipairs(Config.Items) do
         if ctx.allows(item) then
-            local locked, lockReason = itemLocked(item, data)
             local owned = counts[item.id] or 0
             local pickCost = item.pickCost or 1
             local voucherPicks = 0
@@ -144,14 +119,12 @@ local function buildPayload(src, ctx)
             end
             items[#items + 1] = {
                 id = item.id, category = item.category, label = item.label,
-                description = item.description, image = item.image, rarity = item.rarity or 'common',
+                description = item.description, image = item.image,
                 contents = Rewards.DescribeAll(item.rewards), specs = item.specs,
                 price = modeAllows('credits') and item.price or nil,
                 pickCost = (item.pools and modeAllows('voucher')) and pickCost or nil,
-                minTier = item.minTier, minTierLabel = item.minTier and tierLabel(item.minTier) or nil,
                 limit = item.limit, owned = owned,
                 stackable = item.stackable or false, maxQty = item.maxQty or 1,
-                locked = locked, lockReason = lockReason,
                 soldOut = item.limit and owned >= item.limit or false,
                 canVoucher = (item.pools ~= nil and modeAllows('voucher') and voucherPicks >= pickCost),
                 canCredits = (modeAllows('credits') and item.price ~= nil),
@@ -161,7 +134,7 @@ local function buildPayload(src, ctx)
 
     local pages = buildPages(ctx)
     local start = pages[1].id
-    if ctx.kind == 'shop' and ctx.def.startPage then
+    if ctx.def.startPage then
         local want = ctx.def.startPage == 'redeem' and 'home' or ctx.def.startPage
         for _, p in ipairs(pages) do if p.id == want then start = p.id end end
     end
@@ -179,10 +152,6 @@ local function buildPayload(src, ctx)
         economy = { mode = Config.Economy.mode, creditsName = Config.Economy.creditsName },
         player = {
             name = Bridge.GetCharName(src),
-            tier = data.tier,
-            tierLabel = data.tier and tierLabel(data.tier) or nil,
-            tierColor = data.tier and Config.Tiers[data.tier].color or nil,
-            expiresAt = data.expiresAt,
             credits = coins,
             noDiscord = coinErr == 'no_discord',
             vouchers = voucherOut,
@@ -198,15 +167,12 @@ lib.callback.register('pmv2_store:vip:open', function(src, rawCtx)
 end)
 
 local SPEND_ERRORS = { no_discord = 'no_discord', busy = 'coins_busy', not_enough_coins = 'no_payment', invalid_amount = 'no_payment' }
+function Shop.SpendError(why) return L(SPEND_ERRORS[why] or 'no_payment') end
 
 -- ── Purchasing ───────────────────────────────────────────────
 ---@return table result { id, label, ok, message }
 local function buyOne(src, citizenid, item, method)
     local result = { id = item.id, label = item.label, ok = false }
-
-    local data = VIP.Load(citizenid, true)
-    local locked, reason = itemLocked(item, data)
-    if locked then result.message = reason return result end
 
     if item.limit and DB.CountPurchases(citizenid, item.id) >= item.limit then
         result.message = L('limit_reached') return result
@@ -254,7 +220,6 @@ local function buyOne(src, citizenid, item, method)
     end
 
     DB.LogPurchase(citizenid, item.id, paidWith, cost)
-    VIP.Invalidate(citizenid)
     if Config.Hooks.OnPurchase then pcall(Config.Hooks.OnPurchase, citizenid, src, item, paidWith) end
     if paidWith ~= 'coins' then -- coin purchases are already logged by the wallet
         Discord.Log('VIP shop purchase', ('**%s** (`%s`) bought **%s**'):format(Bridge.GetCharName(src), citizenid, item.label), {
