@@ -19,17 +19,6 @@ Config.Handlers.chat_color = function(src, citizenid, reward)
     return true
 end
 
---- Called whenever a player's VIP tier changes (grant, upgrade, removal, expiry).
---- `src` is nil if the player is offline. oldTier/newTier are tier keys or nil.
-Config.Hooks.OnTierChanged = function(citizenid, src, oldTier, newTier)
-    -- Example: sync an ACE group so other resources can use IsPlayerAceAllowed
-    -- if src then
-    --     local license = GetPlayerIdentifierByType(src, 'license')
-    --     if oldTier then ExecuteCommand(('remove_principal identifier.%s group.vip_%s'):format(license, oldTier)) end
-    --     if newTier then ExecuteCommand(('add_principal identifier.%s group.vip_%s'):format(license, newTier)) end
-    -- end
-end
-
---- Called after a successful shop purchase of one item.
+--- Called after a successful shop purchase of one item (showroom cars too: paidWith = 'coins').
 Config.Hooks.OnPurchase = function(citizenid, src, item, paidWith)
 end

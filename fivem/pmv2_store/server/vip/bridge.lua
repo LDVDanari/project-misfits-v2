@@ -75,15 +75,18 @@ local function newPlate()
     return nil
 end
 
---- Inserts an owned vehicle into the player's garage.
----@return boolean ok, string|nil plateOrError
-function Bridge.AddVehicle(src, model, garage)
+--- Saves an owned vehicle in the player's garage.
+---@param props? table extra vehicle props (colors...). The plate is generated here.
+---@return boolean ok, string|nil plateOrError, integer|nil vehicleId
+function Bridge.AddVehicle(src, model, garage, props)
     local player = Bridge.GetPlayer(src)
     if not player then return false, 'no_player' end
     local citizenid = player.PlayerData.citizenid
     local plate = newPlate()
     if not plate then return false, 'plate' end
     garage = garage or Config.Vehicles.garage
+    props = props or {}
+    props.plate = plate
 
     -- Preferred path: qbx_vehicles export
     local ok, id = pcall(function()
@@ -91,17 +94,17 @@ function Bridge.AddVehicle(src, model, garage)
             model     = model,
             citizenid = citizenid,
             garage    = garage,
-            props     = { plate = plate },
+            props     = props,
         })
     end)
-    if ok and id then return true, plate end
+    if ok and id then return true, plate, id end
 
     -- Fallback: raw insert into player_vehicles (standard Qbox/QBCore schema)
     local inserted = MySQL.insert.await(
         'INSERT INTO player_vehicles (license, citizenid, vehicle, hash, mods, plate, garage, state) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         { Bridge.GetLicense(src), citizenid, model, joaat(model), '{}', plate, garage, Config.Vehicles.state }
     )
-    if inserted then return true, plate end
+    if inserted then return true, plate, inserted end
     return false, 'insert_failed'
 end
 
@@ -114,4 +117,39 @@ function Discord.Log(title, description, fields, color)
     local list = {}
     for _, f in ipairs(fields or {}) do list[#list + 1] = { f.name, f.value, f.inline } end
     Store.Log(title, color or Store.Colors.spend, list, description)
+end
+
+-- ── Spawning (Qbox) ──────────────────────────────────────────
+--- Spawns a networked vehicle at `coords` with the player in the driver seat.
+---@return integer|nil entity, integer|nil netId
+function Bridge.SpawnVehicle(src, model, coords, props)
+    local ok, netId, veh = pcall(qbx.spawnVehicle, {
+        model       = model,
+        spawnSource = coords,
+        warp        = GetPlayerPed(src),
+        props       = props,
+    })
+    if not ok then
+        print(('[pmv2_store] spawn %s failed: %s'):format(tostring(model), tostring(netId)))
+        return nil
+    end
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return nil end
+    Entity(veh).state:set('fuel', 100.0, true)
+    return veh, netId
+end
+
+--- Gives the player keys to a vehicle (qbx_vehiclekeys, with a qb-vehiclekeys fallback).
+function Bridge.GiveKeys(src, veh, plate)
+    if GetResourceState('qbx_vehiclekeys') == 'started' then
+        local ok = pcall(function() exports.qbx_vehiclekeys:GiveKeys(src, veh) end)
+        if ok then return end
+    end
+    TriggerClientEvent('vehiclekeys:client:SetOwner', src, plate)
+end
+
+--- Marks a garage vehicle as "out" (it was just spawned) so the garage lets them store it.
+function Bridge.SetVehicleOut(veh, vehicleId)
+    if not vehicleId then return end
+    Entity(veh).state:set('vehicleid', vehicleId, false)
+    MySQL.update('UPDATE player_vehicles SET state = 0 WHERE id = ?', { vehicleId })
 end

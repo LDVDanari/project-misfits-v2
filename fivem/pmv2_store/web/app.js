@@ -70,13 +70,13 @@ function resolveImage(img) {
     if (img.includes('/')) return img;
     return (state.data.imageBase || '') + img;
 }
-function imageOr(img, rarityIcon) {
+function imageOr(img, fallbackIcon) {
     const src = resolveImage(img);
-    if (!src) return icon(rarityIcon || 'gift', 'ph');
+    if (!src) return icon(fallbackIcon || 'gift', 'ph');
     const im = document.createElement('img');
     im.alt = '';
     im.src = src;
-    im.onerror = () => im.replaceWith(icon(rarityIcon || 'gift', 'ph'));
+    im.onerror = () => im.replaceWith(icon(fallbackIcon || 'gift', 'ph'));
     return im;
 }
 
@@ -105,7 +105,6 @@ window.addEventListener('resize', fitFrame);
 function applyTheme(th) {
     const root = document.documentElement.style;
     for (const k in (th.colors || {})) root.setProperty('--' + k, th.colors[k]);
-    for (const r in (th.rarity || {})) root.setProperty('--r-' + r, th.rarity[r]);
     $('brandA').textContent = th.brandA || '';
     $('brandB').textContent = th.brandB || '';
     $('tagline').textContent = th.tagline || '';
@@ -128,7 +127,7 @@ const unitOf = (item) => (state.method === 'voucher' ? item.pickCost : item.pric
 const currencyName = () => (state.method === 'voucher' ? t('picks') : state.data.economy.creditsName);
 
 function buyable(item) {
-    if (item.locked || item.soldOut) return false;
+    if (item.soldOut) return false;
     return state.method === 'voucher' ? !!item.canVoucher : !!item.canCredits;
 }
 function cartEntries() {
@@ -206,11 +205,6 @@ function pageHome() {
     bal.append(icon('gem'), el('b', '', fmt(p.credits)));
     card.appendChild(bal);
     card.appendChild(el('h2', '', state.data.economy.creditsName));
-    if (p.tier) {
-        const tier = el('div', 'home-tier', `${p.tierLabel} VIP · ${p.expiresAt ? fmtDate(p.expiresAt) : t('lifetime')}`);
-        if (p.tierColor) tier.style.color = p.tierColor;
-        card.appendChild(tier);
-    }
     card.appendChild(el('div', 'hint' + (p.noDiscord ? ' warn' : ''), p.noDiscord ? t('home_no_discord') : t('home_hint')));
 
     const firstShop = state.data.pages.find((pg) => pg.kind === 'category');
@@ -232,18 +226,16 @@ function pageHome() {
 function makeCard(item, idx) {
     const can = buyable(item);
     const card = el('div', 'card' + (state.cart.has(item.id) ? ' in-basket' : '') + (can ? '' : ' off'));
-    card.style.setProperty('--rc', `var(--r-${item.rarity})`);
     card.style.animationDelay = `${Math.min(idx, 12) * 25}ms`;
 
-    if (item.locked) card.appendChild(el('div', 'badge lock', item.minTierLabel ? `${item.minTierLabel} VIP` : t('locked')));
-    else if (item.soldOut) card.appendChild(el('div', 'badge own', t('owned')));
+    if (item.soldOut) card.appendChild(el('div', 'badge own', t('owned')));
 
     const img = el('div', 'img');
     img.appendChild(imageOr(item.image));
     card.appendChild(img);
 
     const body = el('div', 'body');
-    body.append(el('div', 'rar', item.rarity), el('h3', '', item.label));
+    body.appendChild(el('h3', '', item.label));
     if (item.description) body.appendChild(el('p', '', item.description));
     const foot = el('div', 'foot');
     foot.appendChild(priceTag(item));
@@ -255,7 +247,6 @@ function makeCard(item, idx) {
         else state.cart.set(item.id, 1);
         renderPage();
     };
-    if (item.locked) add.title = item.lockReason || '';
     foot.appendChild(add);
     body.appendChild(foot);
     card.appendChild(body);
@@ -346,47 +337,6 @@ function renderGrid(container, page) {
     container.appendChild(grid);
 }
 
-function pageVehicle(page) {
-    const item = itemById(page.item);
-    const wrap = el('div', 'vehicle');
-    if (!item) { wrap.appendChild(el('div', 'empty', t('no_items'))); return wrap; }
-    wrap.style.setProperty('--rc', `var(--r-${item.rarity})`);
-
-    const left = el('div');
-    left.appendChild(el('div', 'kicker', t('showroom_kicker')));
-    left.appendChild(el('h1', '', item.label));
-    left.appendChild(el('div', 'rar', item.rarity));
-    if (item.description) left.appendChild(el('p', '', item.description));
-    if (item.specs && item.specs.length) {
-        const specs = el('div', 'specs');
-        item.specs.forEach(([k, v]) => {
-            const s = el('div', 'spec');
-            s.append(el('small', '', k), el('b', '', v));
-            specs.appendChild(s);
-        });
-        left.appendChild(specs);
-    }
-
-    const card = el('div', 'v-card');
-    const img = el('div', 'v-img');
-    img.appendChild(imageOr(item.image, 'car'));
-    card.appendChild(img);
-    const pr = el('div', 'v-price');
-    pr.append(priceTag(item), el('span', 'kicker', item.limit ? `${item.owned}/${item.limit}` : ''));
-    card.appendChild(pr);
-    if (item.locked) card.appendChild(el('div', 'lock-msg', item.lockReason || t('locked')));
-    else if (item.soldOut) card.appendChild(el('div', 'lock-msg', t('owned')));
-    const cost = unitOf(item) || 0;
-    const btn = el('button', 'btn-cyan', t('buy_vehicle'));
-    btn.disabled = !buyable(item) || cost > balance() || state.busy;
-    btn.onclick = () => checkout([{ item, qty: 1 }]);
-    card.appendChild(btn);
-    card.appendChild(el('div', 'v-note', t('vehicle_note')));
-
-    wrap.append(left, card);
-    return wrap;
-}
-
 function pageSettings() {
     const p = state.data.player;
     const wrap = el('div', 'settings');
@@ -401,8 +351,6 @@ function pageSettings() {
         return r;
     };
     acc.appendChild(row('Character', p.name));
-    acc.appendChild(row(t('vip_tier'), p.tierLabel || t('none'), p.tierColor));
-    if (p.tier) acc.appendChild(row(t('expires'), p.expiresAt ? fmtDate(p.expiresAt) : t('lifetime')));
     if (state.data.economy.mode !== 'voucher') acc.appendChild(row(state.data.economy.creditsName, fmt(p.credits)));
     if (state.data.economy.mode !== 'credits') acc.appendChild(row(t('picks'), fmt(totalPicks())));
 
@@ -439,7 +387,6 @@ function renderPage() {
     let node;
     if (page.kind === 'home' || page.kind === 'redeem') node = pageHome();
     else if (page.kind === 'category') node = pageCategory(page);
-    else if (page.kind === 'vehicle') node = pageVehicle(page);
     else node = pageSettings();
     host.appendChild(node);
 }
@@ -529,9 +476,155 @@ document.addEventListener('keydown', (e) => {
     if (!modal.classList.contains('hidden')) { modal.classList.add('hidden'); return; }
     post('close');
 });
+// ── showroom panel (no focus: the game keeps control, keys are read in Lua) ──
+const sr = { data: null, timer: null };
+
+function srFitScale() {
+    document.documentElement.style.setProperty('--sr-scale', String(Math.max(0.7, Math.min(1.35, window.innerHeight / 1080))));
+}
+window.addEventListener('resize', srFitScale);
+srFitScale();
+
+function srT(key, fallback) { return (sr.data && sr.data.ui && sr.data.ui[key]) || fallback || key; }
+
+function keyRow(key, label, cls) {
+    const row = el('div', 'sr-key ' + (cls || ''));
+    const cap = el('span', 'sr-cap', key);
+    const txt = el('span', 'sr-act', label);
+    const fill = el('i', 'sr-fill');
+    row.append(cap, txt, fill);
+    return row;
+}
+
+function renderShowroom(d) {
+    sr.data = d;
+    const box = $('showroom');
+    box.replaceChildren();
+
+    const head = el('div', 'sr-head');
+    head.append(el('div', 'sr-kicker', srT('showroom_kicker')), el('h2', 'sr-name', d.label));
+    if (d.description) head.appendChild(el('p', 'sr-desc', d.description));
+    box.appendChild(head);
+
+    const price = el('div', 'sr-price');
+    price.append(icon('gem', 'sr-gem'), el('b', '', fmt(d.price)), el('small', '', d.creditsName));
+    box.appendChild(price);
+
+    const stats = el('div', 'sr-stats');
+    const speed = el('div', 'sr-speed');
+    speed.append(el('b', '', String(d.stats.topMph)), el('small', '', 'MPH TOP SPEED'));
+    stats.appendChild(speed);
+    d.stats.bars.forEach((b, i) => {
+        const r = el('div', 'sr-bar');
+        const track = el('div', 'sr-track');
+        const fill = el('i');
+        fill.style.setProperty('--v', b.value + '%');
+        fill.style.animationDelay = (120 + i * 70) + 'ms';
+        track.appendChild(fill);
+        r.append(el('span', '', srT(b.key)), track, el('em', '', String(b.value)));
+        stats.appendChild(r);
+    });
+    box.appendChild(stats);
+
+    if (d.specs && d.specs.length) {
+        const chips = el('div', 'sr-specs');
+        d.specs.forEach(([k, v]) => {
+            const c = el('div', 'sr-chip');
+            c.append(el('small', '', k), el('b', '', v));
+            chips.appendChild(c);
+        });
+        box.appendChild(chips);
+    }
+
+    const keys = el('div', 'sr-keys');
+    let buyLabel = `${srT('sr_buy')} · ${fmt(d.price)}`;
+    let buyCls = 'buy';
+    if (d.soldOut) { buyLabel = srT('sr_owned'); buyCls += ' off'; }
+    else if (d.noDiscord) { buyLabel = srT('home_no_discord'); buyCls += ' off small'; }
+    else if ((d.price || 0) > (d.coins || 0)) { buyLabel = srT('sr_short'); buyCls += ' off'; }
+    const buy = keyRow(d.keys.buy, buyLabel, buyCls);
+    buy.id = 'srBuy';
+    keys.appendChild(buy);
+    if (d.testDrive) keys.appendChild(keyRow(d.keys.test, srT('sr_test'), 'test'));
+    box.appendChild(keys);
+
+    const bal = el('div', 'sr-bal');
+    bal.append(el('span', '', srT('sr_balance')), el('b', '', `${fmt(d.coins)} ${d.creditsName}`));
+    box.appendChild(bal);
+
+    box.classList.remove('hidden', 'out');
+}
+
+function showroomState(m) {
+    const buy = $('srBuy');
+    if (!buy || !sr.data) return;
+    clearTimeout(sr.timer);
+    buy.classList.remove('confirm', 'working', 'blocked');
+    const act = buy.querySelector('.sr-act');
+    const d = sr.data;
+    act.textContent = d.soldOut ? srT('sr_owned') : (buy.classList.contains('off') ? act.textContent : `${srT('sr_buy')} · ${fmt(d.price)}`);
+    if (m.state === 'confirm') {
+        buy.classList.add('confirm');
+        act.textContent = `${srT('sr_confirm')} · ${fmt(d.price)}`;
+        const fill = buy.querySelector('.sr-fill');
+        fill.style.animation = 'none'; void fill.offsetWidth;
+        fill.style.animation = `srDrain ${m.ms || 6000}ms linear forwards`;
+    } else if (m.state === 'working') {
+        buy.classList.add('working');
+        act.textContent = srT('sr_working');
+    } else if (m.state === 'blocked') {
+        buy.classList.add('blocked');
+        sr.timer = setTimeout(() => buy.classList.remove('blocked'), 450);
+    }
+}
+
+function hideShowroom() {
+    const box = $('showroom');
+    if (box.classList.contains('hidden')) return;
+    box.classList.add('out');
+    clearTimeout(sr.timer);
+    sr.timer = setTimeout(() => { box.classList.add('hidden'); box.classList.remove('out'); }, 220);
+    sr.data = null;
+}
+
+// ── test drive timer ──
+const td = { end: 0, raf: null };
+function startTestHud(m) {
+    const hud = $('testdrive');
+    hud.replaceChildren();
+    const ui = m.ui || {};
+    const top = el('div', 'td-top');
+    top.append(el('span', 'td-kick', ui.sr_test_left || 'TEST DRIVE'), el('span', 'td-name', m.label || ''));
+    const time = el('div', 'td-time', '');
+    const bar = el('div', 'td-bar');
+    const fill = el('i');
+    fill.style.animationDuration = `${m.seconds}s`;
+    bar.appendChild(fill);
+    hud.append(top, time, bar, el('div', 'td-hint', ui.sr_test_hint || ''));
+    hud.classList.remove('hidden');
+    td.end = Date.now() + m.seconds * 1000;
+    cancelAnimationFrame(td.raf);
+    const tick = () => {
+        const left = Math.max(0, Math.ceil((td.end - Date.now()) / 1000));
+        const txt = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+        if (time.textContent !== txt) { time.textContent = txt; hud.classList.toggle('low', left <= 10); }
+        if (left > 0) td.raf = requestAnimationFrame(tick);
+    };
+    tick();
+}
+function endTestHud() {
+    cancelAnimationFrame(td.raf);
+    $('testdrive').classList.add('hidden');
+}
+
 window.addEventListener('message', (e) => {
     const m = e.data;
     if (!m || !m.action) return;
     if (m.action === 'open') openUI(m.data);
     else if (m.action === 'close') closeUI();
+    else if (m.action === 'showroom') renderShowroom(m.data);
+    else if (m.action === 'showroomState') showroomState(m);
+    else if (m.action === 'showroomHide') hideShowroom();
+    else if (m.action === 'testdrive') startTestHud(m);
+    else if (m.action === 'testdriveEnd') endTestHud();
 });

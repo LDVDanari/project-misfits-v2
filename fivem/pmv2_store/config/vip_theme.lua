@@ -12,7 +12,7 @@ Config.Theme = {
     hero = {
         kicker = 'PROJECT MISFITS V2',
         title  = { 'Your coins.', 'Your next move.' },
-        text   = 'Browse weapons, items, bundles and VIP perks, paid for with your Misfit Coins.',
+        text   = 'Browse weapons, items and bundles, paid for with your Misfit Coins.',
         note   = { 'One balance everywhere: webstore, /coins and here.', 'Your coins follow your Discord account.' },
     },
 
@@ -29,13 +29,5 @@ Config.Theme = {
         text       = '#f1eef7',
         muted      = '#9a93a8',
         good       = '#34d399',
-    },
-
-    rarity = {
-        common    = '#9aa3b5',
-        uncommon  = '#34d399',
-        rare      = '#38bdf8',
-        epic      = '#a855f7',
-        legendary = '#f5b942',
     },
 }

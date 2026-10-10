@@ -1,9 +1,7 @@
 -- /vipadmin <action> <target> [arg1] [arg2] [arg3]
---   info         <target>
---   givetier     <target> <tier> [days]      days omitted or 0 = lifetime
---   removetier   <target>
+--   info         <target>                   coins, voucher picks, what they've bought
 --   givevoucher  <target> <pool> <picks> [expiresDays]
---   tiers | pools                            list valid keys
+--   pools                                    list valid pool keys
 -- <target> = a player's server id (online) or a citizenid (works offline).
 -- Coins: use /coinsadd and /coinsremove (they work on the same wallet the VIP shop spends from).
 
@@ -37,20 +35,19 @@ local function audit(src, text)
 end
 
 lib.addCommand(Config.Admin.command, {
-    help = 'VIP administration (info, givetier, removetier, givevoucher, tiers, pools). Coins: /coinsadd',
+    help = 'VIP shop admin (info, givevoucher, pools). Coins: /coinsadd',
     restricted = Config.Admin.restricted,
     -- no type on target/arg params: ox_lib's "string" type rejects anything that's only digits (server ids, amounts, days)
     params = {
-        { name = 'action', type = 'string', help = 'info | givetier | removetier | givevoucher | tiers | pools' },
+        { name = 'action', type = 'string', help = 'info | givevoucher | pools' },
         { name = 'target', help = 'server id or citizenid', optional = true },
-        { name = 'arg1',   help = 'tier / pool', optional = true },
-        { name = 'arg2',   help = 'days / picks', optional = true },
+        { name = 'arg1',   help = 'pool', optional = true },
+        { name = 'arg2',   help = 'picks', optional = true },
         { name = 'arg3',   help = 'voucher expiry days', optional = true },
     },
 }, function(src, args)
     local action = tostring(args.action):lower()
 
-    if action == 'tiers' then return reply(src, 'Tiers: ' .. keys(Config.Tiers)) end
     if action == 'pools' then return reply(src, 'Pools: ' .. keys(Config.Pools)) end
     if action == 'givecredits' then return reply(src, 'Coins moved to the store wallet. Use /coinsadd [id] [amount] [reason].') end
 
@@ -58,7 +55,6 @@ lib.addCommand(Config.Admin.command, {
     if not citizenid then return reply(src, 'Target required (server id or citizenid).') end
 
     if action == 'info' then
-        local d = VIP.Load(citizenid, true)
         local vs = Vouchers.List(citizenid)
         local picks = 0
         for _, v in ipairs(vs) do picks = picks + (v.picks_total - v.picks_used) end
@@ -67,21 +63,11 @@ lib.addCommand(Config.Admin.command, {
             local c, err = Store.GetCoins(onlineSrc)
             coins = err == 'no_discord' and 'no Discord' or tostring(c)
         end
-        return reply(src, ('%s | tier: %s | expires: %s | %s: %s | active picks: %d'):format(
-            citizenid, d.tier or 'none', d.tier and (d.expiresAt and os.date('%Y-%m-%d', d.expiresAt) or 'lifetime') or '-',
-            Config.CoinName, coins, picks))
-
-    elseif action == 'givetier' then
-        local tier, days = args.arg1, tonumber(args.arg2) or 0
-        if not tier or not Config.Tiers[tier] then return reply(src, 'Unknown tier. Valid: ' .. keys(Config.Tiers)) end
-        VIP.GrantTier(citizenid, tier, days)
-        audit(src, ('gave %s %s (%s days)'):format(citizenid, tier, days == 0 and 'lifetime' or days))
-        return reply(src, ('Granted %s to %s.'):format(tier, citizenid))
-
-    elseif action == 'removetier' then
-        local ok = VIP.RemoveTier(citizenid)
-        audit(src, ('removed tier from %s'):format(citizenid))
-        return reply(src, ok and 'Tier removed.' or 'They have no active tier.')
+        local bought = {}
+        for id, n in pairs(DB.PurchaseCounts(citizenid)) do bought[#bought + 1] = ('%s x%s'):format(id, n) end
+        table.sort(bought)
+        return reply(src, ('%s | %s: %s | active picks: %d | bought: %s'):format(
+            citizenid, Config.CoinName, coins, picks, #bought > 0 and table.concat(bought, ', ') or 'nothing'))
 
     elseif action == 'givevoucher' then
         local pool, picks, exp = args.arg1, tonumber(args.arg2), tonumber(args.arg3)

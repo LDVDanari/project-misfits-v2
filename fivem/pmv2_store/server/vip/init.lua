@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────
---  VIP shop startup: tables, config checks, old-balance move, delivery type.
+--  VIP shop startup: tables, config checks, old-balance move.
 -- ─────────────────────────────────────────────────────────────
 
 --- Moves any coins left in the old misfits_vip balance into this player's store wallet.
@@ -25,23 +25,8 @@ AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
         if GetPlayerName(src) then
             local ok, err = pcall(MoveOldVipCoins, src)
             if not ok then print('[pmv2_store] Old VIP coin move failed: ' .. tostring(err)) end
-            -- other client scripts can read LocalPlayer.state.vipTier
-            local cid = Bridge.GetCitizenId(src)
-            if cid then Player(src).state:set('vipTier', VIP.Load(cid, true).tier, true) end
         end
     end)
-end)
-
--- The website (or any script adding rows to pmv2_store_deliveries) can hand out VIP time:
---   action = 'grant_tier', payload = { "tier": "gold", "days": 30, "message": "..." }   days 0 = lifetime
-Store.RegisterDeliveryHandler('grant_tier', function(src, payload)
-    local citizenid = Bridge.GetCitizenId(src)
-    if not citizenid then return false, 'no character loaded' end
-    if not Config.Tiers[payload.tier] then return false, 'unknown tier "' .. tostring(payload.tier) .. '"' end
-    local ok, err = VIP.GrantTier(citizenid, payload.tier, tonumber(payload.days) or 0)
-    if not ok then return false, err end
-    if payload.message then Bridge.Notify(src, payload.message, 'success') end
-    return true
 end)
 
 CreateThread(function()
@@ -55,11 +40,10 @@ CreateThread(function()
         for _, pool in ipairs(item.pools or {}) do
             if not Config.Pools[pool] then warn(('item "%s" uses unknown pool "%s"'):format(item.id, pool)) end
         end
-        if item.minTier and not Config.Tiers[item.minTier] then warn(('item "%s" has unknown minTier "%s"'):format(item.id, item.minTier)) end
         if not item.rewards or #item.rewards == 0 then warn(('item "%s" has no rewards'):format(item.id)) end
         if not item.pools and not item.price then warn(('item "%s" has no pools and no price: nobody can buy it'):format(item.id)) end
         for _, r in ipairs(item.rewards or {}) do
-            if r.type == 'tier' and not Config.Tiers[r.tier] then warn(('item "%s" grants unknown tier "%s"'):format(item.id, tostring(r.tier))) end
+            if r.type == 'tier' then warn(('item "%s" has a tier reward: VIP tiers were removed, delete it'):format(item.id)) end
         end
     end
     local itemIds, catIds = {}, {}
@@ -83,13 +67,12 @@ CreateThread(function()
         print('[pmv2_store] misfits_vip is still running. It is built into pmv2_store now: remove `ensure misfits_vip` and delete that folder.')
     end
 
-    local tiers = 0
-    for _ in pairs(Config.Tiers) do tiers = tiers + 1 end
-    print(('[pmv2_store] VIP shop ready. %d items, %d tiers%s.'):format(
-        #Config.Items, tiers, problems > 0 and (', ' .. problems .. ' config warning(s)') or ''))
+    if Config.Showroom.enabled and Config.Showroom.spawns and Config.Showroom.spawns[1]
+        and math.abs(Config.Showroom.spawns[1].x - 540.20) < 0.01 and math.abs(Config.Showroom.spawns[1].y + 3066.50) < 0.01 then
+        warn('Config.Showroom.spawns is still the placeholder. Stand where bought/test cars should appear and use /showroomspot')
+    end
+    print(('[pmv2_store] VIP shop ready. %d items, %d showroom cars%s.'):format(
+        #Config.Items, Config.Showroom.enabled and #Config.Showroom.vehicles or 0,
+        problems > 0 and (', ' .. problems .. ' config warning(s)') or ''))
 end)
 
-AddEventHandler('playerDropped', function()
-    local cid = Bridge.GetCitizenId(source)
-    if cid then VIP.Invalidate(cid) end
-end)
