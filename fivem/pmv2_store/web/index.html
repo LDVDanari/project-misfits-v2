@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PMv2 VIP Store</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rubik:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" class="hidden">
+        <div class="frame" id="frame">
+            <aside class="side">
+                <div class="logo-wrap"><img id="logo" alt=""></div>
+                <nav id="nav"></nav>
+                <button class="webstore" id="webstore"></button>
+            </aside>
+
+            <main class="content">
+                <header class="top">
+                    <div class="wordmark"><span class="a" id="brandA"></span><span class="b" id="brandB"></span></div>
+                    <div class="tagline" id="tagline"></div>
+                    <div class="coins" id="coins">
+                        <span class="gem" id="gem"></span>
+                        <div><b id="coinValue">0</b><small id="coinName"></small></div>
+                    </div>
+                    <button class="close" id="closeBtn" title="Close (Esc)">X</button>
+                </header>
+                <section class="page" id="page"></section>
+            </main>
+        </div>
+
+        <div id="modal" class="modal hidden"></div>
+        <div id="toasts"></div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
