@@ -732,7 +732,7 @@ local REASONS = {
 lib.addCommand('coinsadd', {
     help = ('Give a player %s'):format(Config.CoinName),
     params = {
-        { name = 'target', type = 'string', help = 'Server ID or Discord ID' },
+        { name = 'target', help = 'Server ID or Discord ID' }, -- no type: ox_lib's "string" type rejects numbers
         { name = 'amount', type = 'number', help = 'How many' },
         { name = 'reason', type = 'longString', help = 'Reason (saved in the log)' }
     },
@@ -747,7 +747,7 @@ end)
 lib.addCommand('coinsremove', {
     help = ('Take %s from a player'):format(Config.CoinName),
     params = {
-        { name = 'target', type = 'string', help = 'Server ID or Discord ID' },
+        { name = 'target', help = 'Server ID or Discord ID' }, -- no type: ox_lib's "string" type rejects numbers
         { name = 'amount', type = 'number', help = 'How many' },
         { name = 'reason', type = 'longString', help = 'Reason (saved in the log)' }
     },
@@ -762,7 +762,7 @@ end)
 lib.addCommand('storelookup', {
     help = 'Show a player\'s store orders, coins and anything stuck (prints to F8)',
     params = {
-        { name = 'target', type = 'string', help = 'Server ID, Discord ID or order code (PM-XXXXXX)' }
+        { name = 'target', help = 'Server ID, Discord ID or order code (PM-XXXXXX)' }
     },
     restricted = Config.StaffGroups
 }, function(source, args)
@@ -815,7 +815,7 @@ end)
 lib.addCommand('storedone', {
     help = 'Mark a package order as set up (activates it)',
     params = {
-        { name = 'order', type = 'string', help = 'Order code, e.g. PM-7K3QX2' }
+        { name = 'order', help = 'Order code, e.g. PM-7K3QX2' }
     },
     restricted = Config.StaffGroups
 }, function(source, args)
