@@ -6,6 +6,7 @@
 --   * hands over anything waiting in pmv2_store_deliveries while they're online
 --   * Misfit Coins: /coins, plus exports other scripts use to spend them
 --   * staff tools: /coinsadd, /coinsremove, /storelookup, /storedone
+--   * the in-city VIP shop + VIP tiers live in server/vip/ and spend from this same wallet
 --
 -- Players are matched by the Discord account FiveM sees (Discord must be open
 -- when they launch FiveM). That's the same account they log in with at checkout.
@@ -448,6 +449,24 @@ exports('AddCoins', function(target, amount, reason)
     return adjustCoins(target, amount, reason or 'Script grant', 'script:' .. (GetInvokingResource() or 'unknown'))
 end)
 exports('GetDiscordId', discordOf)
+
+-- Shared with the VIP shop files in server/vip/ (same resource, so no export round-trip).
+Store = {
+    GetCoins = getCoins,                 -- (src) -> coins, 'no_discord'?
+    SpendCoins = spendCoins,             -- (src, amount, reference) -> ok, newBalance | reason
+    -- (src or Discord ID, amount, reason) -> ok, newBalance | reason
+    GiveCoins = function(target, amount, reason)
+        amount = math.floor(tonumber(amount) or 0)
+        if amount <= 0 then return false, 'invalid_amount' end
+        return adjustCoins(target, amount, reason or 'VIP shop', 'pmv2_store:vip')
+    end,
+    DiscordOf = discordOf,
+    CustomerByDiscord = customerByDiscord,
+    Log = sendLog,                       -- (title, color, fields{{name, value, inline?}}, description?)
+    Who = who,
+    Colors = COLORS,
+    RegisterDeliveryHandler = function(action, fn) handlers[action] = fn end,
+}
 
 -- ------------------------------------------------------------
 -- Tebex purchases
