@@ -5,7 +5,7 @@
 --  Every request re-checks the player is standing at that display car.
 -- ─────────────────────────────────────────────────────────────
 local SR = Config.Showroom
-local testDrives = {}   -- [src] = { veh, endsAt (ms), back = vector4 }
+local testDrives = {}   -- [src] = { veh, plate, endsAt (ms), back = vector4 }
 local lastTest = {}     -- [src] = os.time() of their last test drive
 
 local function slotInfo(src, idx)
@@ -34,6 +34,30 @@ local function freeSpawn()
         end
         if clear then return c end
     end
+end
+
+-- Every test drive gets its own plate (prefix + 4 digits) so each loaner has its own key,
+-- and leftover test keys can always be found by the prefix and taken back.
+local TEST_PREFIX = Bridge.CleanPlate(SR.testDrive.plate or 'TEST'):sub(1, 4)
+
+local function isTestPlate(plate)
+    return #plate == #TEST_PREFIX + 4 and plate:sub(1, #TEST_PREFIX) == TEST_PREFIX
+end
+
+local function newTestPlate()
+    local inUse = {}
+    for _, t in pairs(testDrives) do inUse[t.plate] = true end
+    for _ = 1, 50 do
+        local plate = TEST_PREFIX .. ('%04d'):format(math.random(0, 9999))
+        if not inUse[plate] then return plate end
+    end
+    return TEST_PREFIX .. ('%04d'):format(math.random(0, 9999))
+end
+
+--- Takes back any test drive keys the player is still holding.
+local function takeTestKeys(src)
+    if not GetPlayerName(src) then return end
+    Bridge.RemoveKeys(src, isTestPlate)
 end
 
 local function colorProps(slot)
@@ -103,7 +127,7 @@ lib.callback.register('pmv2_store:showroom:buy', function(src, idx)
         local veh = Bridge.SpawnVehicle(src, model, spawnAt, props)
         if veh then
             Bridge.SetVehicleOut(veh, vehicleId)
-            Bridge.GiveKeys(src, veh, plate)
+            Bridge.GiveKeys(src, veh, plate, true)
         end
         Discord.Log('Showroom car bought', ('**%s** (`%s`) bought **%s**'):format(Bridge.GetCharName(src), citizenid, item.label), {
             { name = 'Plate', value = plate, inline = true },
@@ -131,9 +155,12 @@ local function endTest(src, reason)
     testDrives[src] = nil
     lastTest[src] = os.time()
     if GetPlayerName(src) then TriggerClientEvent('pmv2_store:showroom:testEnded', src, t.back, reason) end
+    takeTestKeys(src)
     -- give the client a moment to fade out and step back into the showroom before the car goes
     SetTimeout(1500, function()
         if DoesEntityExist(t.veh) then DeleteEntity(t.veh) end
+        -- second sweep: catches a key pulled out of the ignition (R) right as the drive ended
+        SetTimeout(500, function() takeTestKeys(src) end)
     end)
 end
 
@@ -152,14 +179,16 @@ lib.callback.register('pmv2_store:showroom:test', function(src, idx)
     local pos = GetEntityCoords(ped)
     local back = vector4(pos.x, pos.y, pos.z, GetEntityHeading(ped))
 
+    takeTestKeys(src)   -- clear any stale test key from an earlier drive
+
     local props = colorProps(slot)
-    props.plate = SR.testDrive.plate or 'TESTDRV'
+    props.plate = newTestPlate()
     local veh, netId = Bridge.SpawnVehicle(src, model, spawnAt, props)
     if not veh then return fail(L('test_failed')) end
-    Bridge.GiveKeys(src, veh, props.plate)
+    Bridge.GiveKeys(src, veh, props.plate, true)
 
     local seconds = SR.testDrive.seconds or 90
-    testDrives[src] = { veh = veh, endsAt = GetGameTimer() + seconds * 1000, back = back }
+    testDrives[src] = { veh = veh, plate = props.plate, endsAt = GetGameTimer() + seconds * 1000, back = back }
     return { ok = true, netId = netId, seconds = seconds, label = item.label }
 end)
 
@@ -179,14 +208,24 @@ CreateThread(function()
 end)
 
 AddEventHandler('playerDropped', function()
-    local t = testDrives[source]
-    testDrives[source], lastTest[source] = nil, nil
+    local src = source
+    local t = testDrives[src]
+    testDrives[src], lastTest[src] = nil, nil
+    if t then pcall(takeTestKeys, src) end   -- best effort; the inventory may already be unloading
     if t and DoesEntityExist(t.veh) then DeleteEntity(t.veh) end
+end)
+
+-- Anyone who logged out or crashed mid test drive gets the leftover key taken on their next load.
+AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
+    local src = player and player.PlayerData and player.PlayerData.source
+    if not src then return end
+    SetTimeout(5000, function() takeTestKeys(src) end)
 end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    for _, t in pairs(testDrives) do
+    for src, t in pairs(testDrives) do
+        pcall(takeTestKeys, src)
         if DoesEntityExist(t.veh) then DeleteEntity(t.veh) end
     end
 end)
