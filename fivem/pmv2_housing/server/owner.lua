@@ -196,20 +196,24 @@ lib.callback.register('pmv2_housing:details', function(src, id)
 end)
 
 -- ── Keys ─────────────────────────────────────────────────────
-local function grant(p, target, level, rent)
-    local tcid = Bridge.GetCitizenId(target)
+--- Gives a character access by citizenid (works for offline characters too, e.g. from the phone).
+function Owner.Grant(p, tcid, name, level, rent)
     if not tcid then return false, 'Player not found.' end
     if Housing.Level(p, tcid) then return false, 'They already have access.' end
     local count = 0
     for _, a in pairs(p.access) do if a.level == level then count = count + 1 end end
     local max = level == 'tenant' and Config.Limits.maxTenantsPerProperty or Config.Limits.maxKeyholders
     if count >= max then return false, ('Max %d %ss.'):format(max, level) end
-    local a = { citizenid = tcid, name = Bridge.GetName(target), level = level, rent = rent or 0, rent_missed = 0 }
+    local a = { citizenid = tcid, name = name or tcid, level = level, rent = rent or 0, rent_missed = 0 }
     if level == 'tenant' and (rent or 0) > 0 then a.rent_due = nextDue() end
     p.access[tcid] = a
     DB.SetAccess(p.id, a)
     Housing.Commit(p, { notify = { tcid } })
     return true, tcid
+end
+
+local function grant(p, target, level, rent)
+    return Owner.Grant(p, Bridge.GetCitizenId(target), Bridge.GetName(target), level, rent)
 end
 
 lib.callback.register('pmv2_housing:giveKey', function(src, id, target)

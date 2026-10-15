@@ -17,7 +17,8 @@ client_scripts {
     'client/bridge.lua',
     'client/main.lua',
     'client/menus.lua',
-    'client/creator.lua'
+    'client/creator.lua',
+    'client/phone.lua'
 }
 
 server_scripts {
@@ -27,7 +28,8 @@ server_scripts {
     'server/main.lua',
     'server/realtor.lua',
     'server/owner.lua',
-    'server/billing.lua'
+    'server/billing.lua',
+    'server/phone.lua'
 }
 
 dependencies {
