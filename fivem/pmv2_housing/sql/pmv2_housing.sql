@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS `pmv2_property_access` (
   `rent` INT NOT NULL DEFAULT 0,
   `rent_due` INT NULL,
   `rent_missed` INT NOT NULL DEFAULT 0,
+  `perms` LONGTEXT NULL,
   PRIMARY KEY (`property_id`, `citizenid`),
   KEY `citizenid` (`citizenid`)
 );

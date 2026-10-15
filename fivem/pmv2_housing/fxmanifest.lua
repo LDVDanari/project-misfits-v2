@@ -29,6 +29,7 @@ server_scripts {
     'server/realtor.lua',
     'server/owner.lua',
     'server/billing.lua',
+    'server/upgrades.lua',
     'server/phone.lua'
 }
 

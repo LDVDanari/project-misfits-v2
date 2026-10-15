@@ -19,6 +19,12 @@ CreateThread(function()
       `reason` VARCHAR(150) NULL, PRIMARY KEY (`id`), KEY `citizenid` (`citizenid`))]])
     MySQL.query.await([[CREATE TABLE IF NOT EXISTS `pmv2_property_inside` (
       `citizenid` VARCHAR(64) NOT NULL, `property_id` INT NOT NULL, PRIMARY KEY (`citizenid`))]])
+    -- v1.1: per-person permission overrides (security alerts)
+    local hasPerms = MySQL.scalar.await([[SELECT COUNT(*) FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pmv2_property_access' AND COLUMN_NAME = 'perms']])
+    if tonumber(hasPerms) == 0 then
+        MySQL.query.await('ALTER TABLE `pmv2_property_access` ADD COLUMN `perms` LONGTEXT NULL')
+    end
     DB.ready = true
 end)
 
@@ -57,9 +63,9 @@ end
 
 function DB.SetAccess(id, a)
     MySQL.query(
-        [[INSERT INTO pmv2_property_access (property_id, citizenid, name, level, rent, rent_due, rent_missed) VALUES (?, ?, ?, ?, ?, ?, ?)
-          ON DUPLICATE KEY UPDATE name = VALUES(name), level = VALUES(level), rent = VALUES(rent), rent_due = VALUES(rent_due), rent_missed = VALUES(rent_missed)]],
-        { id, a.citizenid, a.name, a.level, a.rent or 0, a.rent_due, a.rent_missed or 0 })
+        [[INSERT INTO pmv2_property_access (property_id, citizenid, name, level, rent, rent_due, rent_missed, perms) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE name = VALUES(name), level = VALUES(level), rent = VALUES(rent), rent_due = VALUES(rent_due), rent_missed = VALUES(rent_missed), perms = VALUES(perms)]],
+        { id, a.citizenid, a.name, a.level, a.rent or 0, a.rent_due, a.rent_missed or 0, a.perms and json.encode(a.perms) or nil })
 end
 
 function DB.RemoveAccess(id, citizenid)

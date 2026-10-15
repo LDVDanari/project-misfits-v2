@@ -113,6 +113,19 @@ local function processUpkeep(p, hours)
         p.state.dirt = math.min(100, p.state.dirt + D.perHour * hours)
         changed = true
     end
+
+    -- Robot vacuum upgrade: cleans by itself while it has power, and uses a little electricity.
+    local V = Config.Upgrades.vacuum
+    if D.enabled and p.data.upgrades and p.data.upgrades.vacuum and p.state.dirt > 0 then
+        local powered = not V.needsElectricity or p.state.util.electricity.on
+        if powered then
+            p.state.dirt = math.max(0, p.state.dirt - V.cleanPerHour * hours)
+            if U.enabled and V.needsElectricity then
+                p.state.util.electricity.due = p.state.util.electricity.due + (V.electricityPerHour or 0) * hours
+            end
+            changed = true
+        end
+    end
     p.state.used = false
 
     if U.enabled then

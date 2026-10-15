@@ -63,7 +63,10 @@ end
 
 function Housing.Can(p, citizenid, action)
     local level = Housing.Level(p, citizenid)
-    local perms = level and Config.Access[level]
+    if not level then return false end
+    local override = p.access[citizenid] and p.access[citizenid].perms
+    if override and override[action] ~= nil then return override[action] == true end
+    local perms = Config.Access[level]
     return perms and perms[action] == true or false
 end
 
@@ -187,11 +190,17 @@ AddEventHandler('onResourceStart', function(res)
 end)
 
 -- ── Stash (ox_inventory) ────────────────────────────────────
+--- Extra stash weight from the Stash Size upgrade.
+function Housing.StashBonus(p)
+    local level = p.data.upgrades and tonumber(p.data.upgrades.stash) or 0
+    return level * Config.Upgrades.stash.weightPerLevel
+end
+
 function Housing.SyncStash(p)
     if not (p.data.points and p.data.points.stash) then return end
     local sid = Housing.StashId(p.id)
     local slots = tonumber(p.data.stash and p.data.stash.slots) or Config.Stash.slots
-    local weight = tonumber(p.data.stash and p.data.stash.weight) or Config.Stash.weight
+    local weight = (tonumber(p.data.stash and p.data.stash.weight) or Config.Stash.weight) + Housing.StashBonus(p)
     -- owner = false: ONE shared stash per property (per-player stashes are how other housing scripts duped)
     exports.ox_inventory:RegisterStash(sid, p.label .. ' Stash', slots, weight, false)
     pcall(function() exports.ox_inventory:SetSlotCount(sid, slots) end)
@@ -267,7 +276,7 @@ CreateThread(function()
     for _, a in ipairs(access) do
         local p = Props[a.property_id]
         if p then
-            p.access[a.citizenid] = { citizenid = a.citizenid, name = a.name, level = a.level, rent = a.rent or 0, rent_due = a.rent_due, rent_missed = a.rent_missed or 0 }
+            p.access[a.citizenid] = { citizenid = a.citizenid, name = a.name, level = a.level, rent = a.rent or 0, rent_due = a.rent_due, rent_missed = a.rent_missed or 0, perms = decode(a.perms, nil) }
         end
     end
     registerStashHook()
@@ -352,6 +361,7 @@ function Housing.Enter(src, p, mode)
     setInside(src, p.id, mode)
     info.id = p.id
     info.mode = mode
+    if mode ~= 'creator' and Upgrades then Upgrades.Motion(p, src) end
     return info
 end
 

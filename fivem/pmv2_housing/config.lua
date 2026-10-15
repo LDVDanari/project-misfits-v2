@@ -36,10 +36,11 @@ Config.Stash = { slots = 50, weight = 250000 }
 
 -- What each level of access can do.
 Config.Access = {
-    owner     = { enter = true, stash = true, wardrobe = true, garage = true, utilities = true, manage = true },
-    renter    = { enter = true, stash = true, wardrobe = true, garage = true, utilities = true, manage = true },
-    tenant    = { enter = true, stash = true, wardrobe = true, garage = true, utilities = false, manage = false },
-    keyholder = { enter = true, stash = false, wardrobe = false, garage = true, utilities = false, manage = false },
+    -- security = gets motion-sensor / alarm alerts (owners can also turn this on per keyholder/tenant)
+    owner     = { enter = true, stash = true, wardrobe = true, garage = true, utilities = true, manage = true, security = true },
+    renter    = { enter = true, stash = true, wardrobe = true, garage = true, utilities = true, manage = true, security = true },
+    tenant    = { enter = true, stash = true, wardrobe = true, garage = true, utilities = false, manage = false, security = false },
+    keyholder = { enter = true, stash = false, wardrobe = false, garage = true, utilities = false, manage = false, security = false },
 }
 
 -- ─────────────────────────────────────────────────────────────
@@ -119,6 +120,32 @@ Config.IPLs = {
     { key = 'mid_apartment',  label = 'Medium Apartment',       exit = vec4(346.5, -1012.6, -99.2, 357.0) },
     { key = 'eclipse_modern', label = 'Eclipse Towers (Modern)', exit = vec4(-786.9, 315.8, 217.6, 270.0) },
     { key = 'integrity_high', label = '4 Integrity Way (High)', exit = vec4(-31.5, -595.2, 80.0, 250.0) },
+}
+
+-- ─────────────────────────────────────────────────────────────
+--  UPGRADES  (bought from the property menu; they stay with the property when it's sold)
+-- ─────────────────────────────────────────────────────────────
+Config.Upgrades = {
+    buyers = { owner = true, renter = false },   -- who can buy upgrades
+    society = 'realestate',                      -- where upgrade money goes
+
+    -- Stash: +100 kg per level. Level 1 = $30k, then +$20k each (30k, 50k, 70k...).
+    stash = { label = 'Stash Size', weightPerLevel = 100000, basePrice = 30000, priceStep = 20000, maxLevel = 10 },
+
+    -- Furniture limit: starts at 100, +50 per upgrade up to 500, $25k each (used by Phase 2 furniture).
+    furniture = { label = 'Furniture Limit', base = 100, perLevel = 50, max = 500, price = 25000 },
+
+    -- Motion sensor: anyone entering the property (MLO area or interior) alerts the owner, renter
+    -- and anyone the owner gave "security alerts" to.
+    motion = {
+        label = 'Motion Sensor', price = 15000,
+        cooldownSeconds = 60,         -- per person per property, so one visit = one alert
+        ignoreAccessHolders = false,  -- true = only alert for people WITHOUT a key
+        needsElectricity = true,
+    },
+
+    -- Robot vacuum: cleans the place by itself while the power is on.
+    vacuum = { label = 'Robot Vacuum', price = 20000, cleanPerHour = 4.0, needsElectricity = true, electricityPerHour = 2 },
 }
 
 -- ─────────────────────────────────────────────────────────────

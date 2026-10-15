@@ -175,7 +175,7 @@ lib.callback.register('pmv2_housing:details', function(src, id)
     if not level then return nil end
     local people = {}
     for c, a in pairs(p.access) do
-        people[#people + 1] = { citizenid = c, name = a.name, level = a.level, rent = a.rent, rent_due = a.rent_due }
+        people[#people + 1] = { citizenid = c, name = a.name, level = a.level, rent = a.rent, rent_due = a.rent_due, security = Housing.Can(p, c, 'security') }
     end
     table.sort(people, function(a, b) return (a.name or '') < (b.name or '') end)
     local util = {}

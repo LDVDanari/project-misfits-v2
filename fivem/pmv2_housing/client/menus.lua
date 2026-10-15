@@ -241,6 +241,10 @@ function Menus.Manage(id)
             onSelect = function() Menus.Clean(id) end,
         }
     end
+    options[#options + 1] = {
+        title = 'Upgrades', description = 'Stash size, furniture limit, motion sensor, robot vacuum', icon = 'arrow-up-right-dots',
+        onSelect = function() Menus.Upgrades(id) end,
+    }
     if isOwner then
         options[#options + 1] = { title = 'Sell or transfer', icon = 'handshake', onSelect = function() Menus.Sell(id, d) end }
     end
@@ -343,6 +347,18 @@ function Menus.Person(id, d, person)
             end,
         }
     end
+    options[#options + 1] = {
+        title = person.security and 'Security alerts: ON' or 'Security alerts: OFF',
+        description = 'Motion sensor and alarm alerts for this person', icon = 'shield-halved',
+        onSelect = function()
+            local ok = lib.callback.await('pmv2_housing:setSecurity', false, id, person.citizenid, not person.security)
+            if ok then
+                person.security = not person.security
+                Bridge.Notify(('Security alerts %s for %s.'):format(person.security and 'on' or 'off', person.name or 'them'), 'success')
+            end
+            Menus.Person(id, d, person)
+        end,
+    }
     if person.level ~= 'tenant' or d.level == 'owner' then
         options[#options + 1] = {
             title = person.level == 'tenant' and 'Evict' or 'Take key back', icon = 'user-minus',
@@ -393,6 +409,38 @@ end
 function Menus.MoveOut(id)
     local c = lib.alertDialog({ header = 'Hand back key', content = 'You will lose access to this property.', centered = true, cancel = true })
     if c == 'confirm' then notifyResult(lib.callback.await('pmv2_housing:leave', false, id), nil, 'You handed back your key.') end
+end
+
+-- ── Upgrades ─────────────────────────────────────────────────
+function Menus.Upgrades(id)
+    local res = lib.callback.await('pmv2_housing:upgrades', false, id)
+    if not res then return end
+    local options = {}
+    for _, key in ipairs({ 'stash', 'furniture', 'motion', 'vacuum' }) do
+        local u = res.list[key]
+        local icon = ({ stash = 'box-archive', furniture = 'couch', motion = 'satellite-dish', vacuum = 'robot' })[key]
+        local desc = u.text
+        if u.price then desc = desc .. (u.nextText and (' • ' .. u.nextText) or '') .. ' • ' .. Shared.Money(u.price) end
+        options[#options + 1] = {
+            title = u.label .. ((u.owned or (u.price == nil)) and '  ✓' or ''),
+            description = desc, icon = icon,
+            disabled = not res.canBuy or u.price == nil,
+            onSelect = function()
+                local c = lib.alertDialog({
+                    header = u.label,
+                    content = ('Buy **%s** for **%s**?'):format(u.nextText and u.nextText ~= 'Maxed out' and u.nextText or u.label, Shared.Money(u.price)),
+                    centered = true, cancel = true,
+                })
+                if c ~= 'confirm' then return end
+                local ok, msg = lib.callback.await('pmv2_housing:buyUpgrade', false, id, key)
+                if ok then Bridge.Notify(msg .. ' upgraded!', 'success') else Bridge.Notify(msg or 'Could not upgrade.', 'error') end
+                Menus.Upgrades(id)
+            end,
+        }
+    end
+    if not res.canBuy then options[#options + 1] = { title = 'Only the owner can buy upgrades.', disabled = true } end
+    lib.registerContext({ id = 'pmv2h_upgrades', title = 'Upgrades', menu = 'pmv2h_manage', options = options })
+    lib.showContext('pmv2h_upgrades')
 end
 
 -- ── Utility points ───────────────────────────────────────────

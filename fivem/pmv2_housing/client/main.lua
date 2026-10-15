@@ -383,6 +383,30 @@ CreateThread(function()
     end
 end)
 
+-- ── Motion sensors on MLO properties ─────────────────────────
+-- Shells/IPLs are handled by the server when someone goes inside.
+CreateThread(function()
+    local insideZone = {}
+    while true do
+        Wait(1000)
+        local pos = GetEntityCoords(cache.ped)
+        for id, p in pairs(Props) do
+            local z = p.type == 'mlo' and p.data.zone
+            if z and p.data.upgrades and p.data.upgrades.motion then
+                local now = #(pos - vector3(z.x, z.y, z.z)) <= (z.r or 20.0)
+                if now and not insideZone[id] then TriggerServerEvent('pmv2_housing:motion', id) end
+                insideZone[id] = now
+            else
+                insideZone[id] = nil
+            end
+        end
+    end
+end)
+
+RegisterNetEvent('pmv2_housing:securityAlert', function(id)
+    PlaySoundFrontend(-1, 'CONFIRM_BEEP', 'HUD_MINI_GAME_SOUNDSET', true)
+end)
+
 -- ── Misc ─────────────────────────────────────────────────────
 RegisterNetEvent('pmv2_housing:copy', function(text)
     lib.setClipboard(text)
