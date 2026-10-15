@@ -5,7 +5,7 @@ lua54 'yes'
 name 'pmv2_store'
 author 'Project Misfits v2'
 description 'projectmisfitsrp.com in the city: Misfit Coins wallet, Tebex + website deliveries, VIP shop, vehicle showroom, staff tools'
-version '2.1.0'
+version '2.2.0'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -25,6 +25,7 @@ client_scripts {
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
+    'config/server.lua',        -- SERVER ONLY: webhook + trusted resources (never sent to players)
     'server/main.lua',          -- wallet, deliveries, Tebex, staff commands (defines Store for the VIP files)
     'config/vip_handlers.lua',
     'server/vip/bridge.lua',

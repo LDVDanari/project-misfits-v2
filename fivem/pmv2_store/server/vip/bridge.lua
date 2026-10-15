@@ -109,7 +109,7 @@ function Bridge.AddVehicle(src, model, garage, props)
 end
 
 -- ── Discord logs ─────────────────────────────────────────────
--- VIP shop logs go to the same webhook as the rest of the store (Config.LogWebhook in config.lua).
+-- VIP shop logs go to the same webhook as the rest of the store (config/server.lua).
 Discord = {}
 
 ---@param fields? table[] { { name=, value=, inline? } }
@@ -138,13 +138,79 @@ function Bridge.SpawnVehicle(src, model, coords, props)
     return veh, netId
 end
 
---- Gives the player keys to a vehicle (qbx_vehiclekeys, with a qb-vehiclekeys fallback).
-function Bridge.GiveKeys(src, veh, plate)
-    if GetResourceState('qbx_vehiclekeys') == 'started' then
+-- ── Vehicle keys (tgiann-hotwire) ───────────────────────────────
+-- tgiann keys are real `car_key` items in ox_inventory. tgiann has no "remove key" export
+-- (keys are physical), so taking a key back = removing that car_key item from the player.
+local KEYS     = Config.Vehicles.keys or {}
+local KEY_RES  = KEYS.resource or 'tgiann-hotwire'
+local KEY_ITEM = KEYS.item or 'car_key'
+
+--- Plates come back from GTA padded to 8 chars; compare them trimmed + uppercased.
+function Bridge.CleanPlate(plate)
+    local p = tostring(plate or ''):gsub('^%s+', ''):gsub('%s+$', '')
+    return p:upper()
+end
+
+--- Gives the player a key for this plate. isNew = true makes a fresh key id, so any older
+--- key for the same plate stops working.
+function Bridge.GiveKeys(src, veh, plate, isNew)
+    if (not plate or plate == '') and veh and DoesEntityExist(veh) then
+        plate = GetVehicleNumberPlateText(veh)
+    end
+    plate = Bridge.CleanPlate(plate)
+    if plate == '' then return false end
+
+    if GetResourceState(KEY_RES) == 'started' then
+        local ok, err = pcall(function()
+            exports[KEY_RES]:GiveKeyPlate(src, plate, isNew == true)
+        end)
+        if ok then return true end
+        print(('[pmv2_store] %s:GiveKeyPlate failed for %s (%s): %s'):format(KEY_RES, src, plate, tostring(err)))
+    end
+
+    -- Fallbacks for other key scripts.
+    if GetResourceState('qbx_vehiclekeys') == 'started' and veh then
         local ok = pcall(function() exports.qbx_vehiclekeys:GiveKeys(src, veh) end)
-        if ok then return end
+        if ok then return true end
     end
     TriggerClientEvent('vehiclekeys:client:SetOwner', src, plate)
+    return false
+end
+
+-- A key's plate lives in its metadata. Plates are max 8 chars, so only short strings are
+-- checked (skips labels/descriptions) and the field name doesn't matter.
+local function keyPlateMatches(metadata, test)
+    if type(metadata) ~= 'table' then return false end
+    for _, value in pairs(metadata) do
+        if type(value) == 'string' and #value <= 8 and test(Bridge.CleanPlate(value)) then
+            return true
+        end
+    end
+    return false
+end
+
+--- Removes every car_key in the player's inventory whose plate passes `test(plate)`.
+--- `test` can also be a plate string for an exact match. Returns how many were removed.
+function Bridge.RemoveKeys(src, test)
+    if GetResourceState('ox_inventory') ~= 'started' then return 0 end
+    if type(test) ~= 'function' then
+        local want = Bridge.CleanPlate(test)
+        test = function(p) return p == want end
+    end
+
+    local ok, items = pcall(function() return exports.ox_inventory:GetInventoryItems(src) end)
+    if not ok or type(items) ~= 'table' then return 0 end
+
+    local removed = 0
+    for _, item in pairs(items) do
+        if item and item.name == KEY_ITEM and keyPlateMatches(item.metadata, test) then
+            local count = item.count or 1
+            if exports.ox_inventory:RemoveItem(src, KEY_ITEM, count, nil, item.slot) then
+                removed = removed + count
+            end
+        end
+    end
+    return removed
 end
 
 --- Marks a garage vehicle as "out" (it was just spawned) so the garage lets them store it.

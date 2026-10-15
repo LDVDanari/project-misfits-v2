@@ -161,6 +161,7 @@ local function buildPayload(src, ctx)
 end
 
 lib.callback.register('pmv2_store:vip:open', function(src, rawCtx)
+    if Store.RateLimited(src, 'vip:open', 500) then return { error = L('busy') } end
     local ctx, err = resolveCtx(src, rawCtx)
     if not ctx then return { error = L(err) } end
     return buildPayload(src, ctx)
@@ -235,6 +236,7 @@ end
 
 lib.callback.register('pmv2_store:vip:purchase', function(src, rawCtx, cart, method)
     local fail = function(key, ...) return { ok = false, results = {}, message = L(key, ...) } end
+    if Store.RateLimited(src, 'vip:purchase', 1000) then return fail('busy') end
 
     local ctx, err = resolveCtx(src, rawCtx)
     if not ctx then return fail(err) end
@@ -243,12 +245,13 @@ lib.callback.register('pmv2_store:vip:purchase', function(src, rawCtx, cart, met
     if not citizenid then return fail('no_player') end
     if busy[citizenid] then return fail('busy') end
     if type(cart) ~= 'table' or #cart == 0 then return fail('cart_empty') end
+    if #cart > Config.Shop.maxCart then return fail('cart_too_big', Config.Shop.maxCart) end
     if method ~= 'voucher' and method ~= 'credits' then return fail('no_payment') end
 
     -- expand [{id, qty}] into a flat list, validating everything the client sent
     local flat = {}
     for _, entry in ipairs(cart) do
-        local item = type(entry) == 'table' and itemsById[entry.id]
+        local item = type(entry) == 'table' and type(entry.id) == 'string' and itemsById[entry.id]
         if item then
             if not ctx.allows(item) then return fail('not_in_store') end
             local qty = 1
