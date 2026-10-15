@@ -109,7 +109,7 @@ function Bridge.AddVehicle(src, model, garage, props)
 end
 
 -- ── Discord logs ─────────────────────────────────────────────
--- VIP shop logs go to the same webhook as the rest of the store (Config.LogWebhook in config.lua).
+-- VIP shop logs go to the same webhook as the rest of the store (config/server.lua).
 Discord = {}
 
 ---@param fields? table[] { { name=, value=, inline? } }

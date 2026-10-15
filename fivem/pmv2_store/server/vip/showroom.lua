@@ -67,6 +67,7 @@ end
 
 -- ── Panel info ───────────────────────────────────────────────
 lib.callback.register('pmv2_store:showroom:info', function(src, idx)
+    if Store.RateLimited(src, 'showroom:info', 200) then return { error = L('busy') } end
     local slot, item, model = slotInfo(src, idx)
     if not slot then return { error = L(item) } end
     local citizenid = Bridge.GetCitizenId(src)
@@ -92,6 +93,7 @@ end)
 -- ── Buy ──────────────────────────────────────────────────────
 lib.callback.register('pmv2_store:showroom:buy', function(src, idx)
     local fail = function(msg) return { ok = false, message = msg } end
+    if Store.RateLimited(src, 'showroom:buy', 1500) then return fail(L('busy')) end
     local slot, item, model = slotInfo(src, idx)
     if not slot then return fail(L(item)) end
     if not item.price then return fail(L('no_payment')) end
@@ -166,6 +168,7 @@ end
 
 lib.callback.register('pmv2_store:showroom:test', function(src, idx)
     local fail = function(msg) return { ok = false, message = msg } end
+    if Store.RateLimited(src, 'showroom:test', 1500) then return fail(L('busy')) end
     if not SR.testDrive.enabled then return fail(L('bad_store')) end
     local slot, item, model = slotInfo(src, idx)
     if not slot then return fail(L(item)) end
@@ -193,6 +196,7 @@ lib.callback.register('pmv2_store:showroom:test', function(src, idx)
 end)
 
 RegisterNetEvent('pmv2_store:showroom:endTest', function()
+    if Store.RateLimited(source, 'showroom:endTest', 1000) then return end
     endTest(source, 'ended')
 end)
 
@@ -217,7 +221,7 @@ end)
 
 -- Anyone who logged out or crashed mid test drive gets the leftover key taken on their next load.
 AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
-    local src = player and player.PlayerData and player.PlayerData.source
+    local src = Store.RealLoadedPlayer(player)
     if not src then return end
     SetTimeout(5000, function() takeTestKeys(src) end)
 end)

@@ -129,7 +129,6 @@ local function setupStore(key, shop)
         exports.ox_target:addSphereZone({
             coords  = v3(coords),
             radius  = shop.target.radius or 1.5,
-            debug   = Config.Debug,
             options = options,
         })
     end
@@ -238,7 +237,6 @@ end)
 
 RegisterNetEvent('pmv2_store:showroom:copySpot', function(text)
     lib.setClipboard(text)
-    print(('[pmv2_store] showroom spawn: %s'):format(text))
     notify(('Copied %s - paste it into Config.Showroom.spawns'):format(text), 'success')
 end)
 
@@ -319,10 +317,7 @@ end
 local function setupShowroomSlot(i, slot)
     local model = vehicleModelOf(slot.item)
     model = slot.model or model
-    if not model then
-        print(('[pmv2_store] showroom slot %d: item "%s" has no vehicle reward'):format(i, tostring(slot.item)))
-        return
-    end
+    if not model then return end   -- the server warns about this at startup
     local c = slot.coords
 
     lib.points.new({

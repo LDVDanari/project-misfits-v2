@@ -18,12 +18,6 @@ Config.MaxAttempts = 10
 -- Allow 'give_item' deliveries through ox_inventory.
 Config.ItemDeliveries = true
 
--- Extra console logging.
-Config.Debug = false
-
--- Discord log channel. In Discord: Channel settings -> Integrations -> Webhooks -> New Webhook -> Copy URL.
--- Logs coins spent in the city (what was bought + before/after balance), staff coin adds/removes,
--- script grants, store deliveries, packages marked done and failed deliveries.
--- Leave '' to turn logging off.
-Config.LogWebhook = ''
+-- This file is SHARED: every player's game downloads it. Never put secrets here.
+-- The Discord webhook and the trusted-resource list live in config/server.lua (server only).
 Config.LogName = 'PMv2 Store Logs'
