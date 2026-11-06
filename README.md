@@ -69,3 +69,18 @@ ADMIN_PASSWORD=...
 ```
 
 If either value is missing, the admin route returns 404. The current dashboard is intentionally read-only; write controls should not be enabled until database persistence, role-based authentication and audit logging are added.
+
+## Currencies (USD + CAD)
+
+Prices come from Tebex. To take Canadian dollars:
+
+1. Tebex control panel -> Settings -> Checkout -> **Supported currencies**: turn on **CAD**.
+2. Optional: Tebex -> Webstore -> **Regional pricing**: set Canada's prices yourself (otherwise Tebex converts the USD price).
+3. Make sure `TEBEX_PRIVATE_KEY` is set in Coolify. With it the site asks Tebex for each visitor's own prices,
+   so players in Canada see `$17.13 CAD` instead of the USD price. Without it everyone sees the base (USD) price,
+   but Tebex still charges Canadians in CAD at checkout.
+
+## Package names in Tebex
+
+A site product goes live when a Tebex package with the same name exists (or map it with `TEBEX_PACKAGE_MAP`).
+New ones: **Unban Package** (`unban`) and **VIP Gun Card Package** (`vip-gun-card`).

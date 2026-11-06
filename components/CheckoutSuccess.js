@@ -4,10 +4,9 @@ import Link from 'next/link';
 import { useCart } from './CartProvider';
 import { DISCORD_URL } from '../lib/site';
 
-const money = (n, c = 'USD') => {
-  try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: String(c || 'USD').toUpperCase() }).format(Number(n) || 0); }
-  catch { return '$' + (Number(n) || 0).toFixed(2); }
-};
+import { formatPrice } from '../lib/money';
+
+const money = (n, c = 'USD') => formatPrice(Number(n) || 0, c) || '$' + (Number(n) || 0).toFixed(2);
 
 export default function CheckoutSuccess() {
   const c = useCart();
