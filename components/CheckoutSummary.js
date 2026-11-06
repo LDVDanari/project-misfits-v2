@@ -4,7 +4,9 @@ import { useCart } from './CartProvider';
 import CheckoutPayButton from './CheckoutPayButton';
 import DiscordAccount, { useDiscordAccount } from './DiscordAccount';
 
-const lineTotal = x => Number(String(x.price).replace(/[^0-9.]/g, '')) * x.qty;
+import { priceNumber } from '../lib/money';
+
+const lineTotal = x => priceNumber(x.price) * x.qty;
 
 export default function CheckoutSummary() {
   const c = useCart();
@@ -14,9 +16,9 @@ export default function CheckoutSummary() {
   return <div className="checkoutLayout">
     <section className="checkoutItems">
       <div className="kicker">ORDER REVIEW</div>
-      {c.items.map(x => <article key={x.slug}><div><b>{x.title}</b><small>{x.price} × {x.qty}</small></div><strong>{'$' + lineTotal(x).toFixed(2)}</strong></article>)}
-      <div className="checkoutTotal"><span>SUBTOTAL</span><b>{'$' + c.subtotal.toFixed(2)}</b></div>
-      <small className="checkoutTaxNote">Any sales tax is added by Tebex at checkout.</small>
+      {c.items.map(x => <article key={x.slug}><div><b>{x.title}</b><small>{x.price} × {x.qty}</small></div><strong>{c.money(lineTotal(x))}</strong></article>)}
+      <div className="checkoutTotal"><span>SUBTOTAL</span><b>{c.money(c.subtotal)}</b></div>
+      <small className="checkoutTaxNote">Any sales tax is added by Tebex at checkout. Tebex charges in your country&apos;s currency (USD, or CAD in Canada).</small>
     </section>
     <aside className="checkoutNotice">
       <div className="kicker">SECURE CHECKOUT</div>
