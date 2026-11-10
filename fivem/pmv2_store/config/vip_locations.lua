@@ -85,7 +85,7 @@ Config.Showroom = {
         enabled  = true,
         seconds  = 90,                -- length of a test drive
         cooldown = 120,               -- seconds before the same player can test drive again
-        plate    = 'TESTDRV',
+        plate    = 'TEST',            -- plate prefix (max 4 chars): each drive gets TEST + 4 digits and its own key
         leaveSeconds = 8,             -- out of the car this long = test drive ends
     },
 
