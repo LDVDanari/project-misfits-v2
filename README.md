@@ -84,3 +84,16 @@ Prices come from Tebex. To take Canadian dollars:
 
 A site product goes live when a Tebex package with the same name exists (or map it with `TEBEX_PACKAGE_MAP`).
 New ones: **Unban Package** (`unban`) and **VIP Gun Card Package** (`vip-gun-card`).
+
+## Discord receipts
+
+Buyers who log in with Discord on the checkout page get a private receipt card in their Discord DMs from the PMv2 bot.
+
+1. In Discord, run `/store webhook` (management only). The bot makes a hidden `🧾・store-receipts` channel and shows a webhook URL.
+2. Coolify -> environment: `DISCORD_RECEIPT_WEBHOOK_URL` = that URL.
+3. Tebex -> Developers -> Webhooks -> Endpoints -> add `https://projectmisfitsrp.com/api/tebex/webhook`, tick **payment.completed**.
+   Copy the endpoint's secret into `TEBEX_WEBHOOK_SECRET`, redeploy, then press **Validate** in Tebex.
+4. `/api/health` shows `discordReceipts: true` when both values are set.
+
+The site only sends the transaction ID, package names, prices, the FiveM name and the Discord ID to Discord: never emails, IPs or card details.
+Buyers who didn't log in with Discord still show up in the staff channel, where staff can send the receipt by hand.
