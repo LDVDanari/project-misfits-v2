@@ -45,6 +45,7 @@ export default function DiscordAccount({ account }) {
           <small>YOUR ACCOUNT</small>
           <b>{u.username}</b>
           {typeof u.coins === 'number' && <span>{u.coins} Misfit Coins right now</span>}
+          <span>Your receipt will be sent to your Discord DMs.</span>
         </div>
         <button type="button" onClick={switchAccount}>SWITCH</button>
       </div>
@@ -53,7 +54,7 @@ export default function DiscordAccount({ account }) {
 
   return (
     <div className="discordAccount">
-      <p>Optional: log in with Discord to see your Misfit Coin balance here.</p>
+      <p>Optional: log in with Discord to get your receipt in your Discord DMs and see your Misfit Coin balance here.</p>
       {account.loginAvailable && <a className="gold discordLogin" href={LOGIN_URL}>LOG IN WITH DISCORD</a>}
       {error && <p className="checkoutError">{error}</p>}
     </div>

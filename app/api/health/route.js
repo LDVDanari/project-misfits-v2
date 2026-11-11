@@ -1,6 +1,7 @@
 import { tebexReady, getTebexPackages, createBasket, addBasketPackage, clientIp, tebexToken, tebexPrivateKey } from '../../../lib/tebex';
 import { dbReady } from '../../../lib/db';
 import { customerLoginReady } from '../../../lib/customerSession';
+import { receiptsReady } from '../../../lib/receipts';
 import { getResolvedCatalog } from '../../../lib/catalogServer';
 
 export const dynamic = 'force-dynamic';
@@ -95,6 +96,7 @@ export async function GET(req) {
       // optional extras: coin balance on the checkout page
       database: dbReady(),
       discordLogin: customerLoginReady(),
+      discordReceipts: receiptsReady(),
       missing
     },
     ...(test ? { checkoutTest: test } : {})
