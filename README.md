@@ -91,7 +91,8 @@ Buyers who log in with Discord on the checkout page get a private receipt card i
 
 1. In Discord, run `/store webhook` (management only). The bot makes a hidden `🧾・store-receipts` channel and shows a webhook URL.
 2. Coolify -> environment: `DISCORD_RECEIPT_WEBHOOK_URL` = that URL.
-3. Tebex -> Developers -> Webhooks -> Endpoints -> add `https://projectmisfitsrp.com/api/tebex/webhook`, tick **payment.completed**.
+3. Tebex -> Developers -> Webhooks -> Endpoints -> add `https://projectmisfitsrp.com/api/tebex/webhook`, tick **payment.completed**,
+   **payment.refunded** and the four **payment.dispute** events (refund / chargeback alerts for the Dono Team).
    Copy the endpoint's secret into `TEBEX_WEBHOOK_SECRET`, redeploy, then press **Validate** in Tebex.
 4. `/api/health` shows `discordReceipts: true` when both values are set.
 
