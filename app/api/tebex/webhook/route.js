@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { clientIp } from '../../../../lib/tebex';
 import { getResolvedCatalog } from '../../../../lib/catalogServer';
-import { TEBEX_WEBHOOK_IPS, webhookSecret, validSignature, buildReceipt, postReceipt, receiptWebhookUrl } from '../../../../lib/receipts';
+import { TEBEX_WEBHOOK_IPS, RECEIPT_KINDS, webhookSecret, validSignature, buildReceipt, postReceipt, receiptWebhookUrl } from '../../../../lib/receipts';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // Tebex -> Developers -> Webhooks -> Endpoints: https://projectmisfitsrp.com/api/tebex/webhook
-// Subscribe to "payment.completed". Only signed requests from Tebex are accepted.
+// Subscribe to "payment.completed", "payment.refunded" and the "payment.dispute.*" events.
+// Only signed requests from Tebex are accepted.
 export async function POST(req) {
   const notFound = () => new NextResponse('Not Found', { status: 404 });
   if (!webhookSecret()) return notFound();
@@ -28,7 +29,8 @@ export async function POST(req) {
   try { event = JSON.parse(raw); } catch { return NextResponse.json({ error: 'Bad JSON' }, { status: 400 }); }
 
   if (event?.type === 'validation.webhook') return NextResponse.json({ id: event.id });
-  if (event?.type !== 'payment.completed') return NextResponse.json({ ok: true, ignored: event?.type || null });
+  const kind = RECEIPT_KINDS[event?.type];
+  if (!kind) return NextResponse.json({ ok: true, ignored: event?.type || null });
 
   if (!receiptWebhookUrl()) {
     console.error('[tebex webhook] DISCORD_RECEIPT_WEBHOOK_URL is not set - receipt not sent');
@@ -37,7 +39,7 @@ export async function POST(req) {
 
   try {
     const catalog = await getResolvedCatalog({ ip: null }).catch(() => []);
-    const receipt = buildReceipt(event.subject, catalog);
+    const receipt = buildReceipt(event.subject, catalog, kind);
     if (!receipt.tx) return NextResponse.json({ ok: true, receipt: 'no transaction id' });
     await postReceipt(receipt);
     return NextResponse.json({ ok: true });
