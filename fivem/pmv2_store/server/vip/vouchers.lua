@@ -36,4 +36,9 @@ function Vouchers.Refund(id, cost)
 end
 
 --   exports.pmv2_store:GiveVoucher(citizenid, 'monthly_pick', 1, 45)
-exports('GiveVoucher', function(cid, pool, picks, days) return Vouchers.Give(cid, pool, picks, days, 'export') end)
+exports('GiveVoucher', function(cid, pool, picks, days)
+    if not Store.TrustedCaller('GiveVoucher') then return false, 'not_allowed' end
+    picks = math.floor(tonumber(picks) or 0)
+    if type(cid) ~= 'string' or picks < 1 or picks > 1000 then return false, 'invalid' end
+    return Vouchers.Give(cid, pool, picks, tonumber(days), 'export:' .. (GetInvokingResource() or '?'))
+end)

@@ -15,7 +15,6 @@ Config.Hooks    = {}
 Config.Handlers.chat_color = function(src, citizenid, reward)
     -- Example: store it wherever your chat resource reads it from.
     -- exports['my_chat']:SetColor(citizenid, reward.color)
-    print(('[pmv2_store] chat_color %s -> %s'):format(citizenid, tostring(reward.color)))
     return true
 end
 

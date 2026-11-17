@@ -19,7 +19,7 @@ function MoveOldVipCoins(src, citizenid)
 end
 
 AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
-    local src = player and player.PlayerData and player.PlayerData.source
+    local src = Store.RealLoadedPlayer(player)
     if not src then return end
     SetTimeout(8000, function()
         if GetPlayerName(src) then

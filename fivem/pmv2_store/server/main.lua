@@ -20,10 +20,6 @@ local function log(msg)
     print(('[pmv2_store] %s'):format(msg))
 end
 
-local function debug(msg)
-    if Config.Debug then log(msg) end
-end
-
 local function notify(src, text, kind, duration)
     if not src or src <= 0 then
         log(text)
@@ -164,6 +160,82 @@ local function sendLog(title, color, fields, description)
     }), { ['Content-Type'] = 'application/json' })
 end
 
+-- ------------------------------------------------------------
+-- Security: export allow-list, rate limits, flood reports
+-- ------------------------------------------------------------
+
+local THIS = GetCurrentResourceName()
+
+local function matchesTrusted(res)
+    for _, pat in ipairs(Config.TrustedResources or {}) do
+        if pat == res then return true end
+        if pat:sub(-1) == '*' and res:sub(1, #pat - 1) == pat:sub(1, -2) then return true end
+    end
+    return false
+end
+
+--- True when the resource calling an export is allowed to move coins / vouchers.
+local function trustedCaller(exportName)
+    local res = GetInvokingResource()
+    if not res or res == THIS or matchesTrusted(res) then return true end
+    log(('BLOCKED: resource "%s" tried to use %s. If that is one of yours, add it to Config.TrustedResources in config/server.lua.'):format(res, exportName))
+    sendLog('Blocked export call', COLORS.fail, {
+        { 'Resource', res, true }, { 'Export', exportName, true },
+        { 'What this means', 'A resource that is not on the trusted list tried to move coins. If you did not add it on purpose, check that resource for a backdoor.' },
+    })
+    return false
+end
+
+local lastCall, flood, floodReported = {}, {}, {}
+local FLOOD = Config.FloodLimit or { requests = 40, windowSeconds = 10 }
+
+--- Returns true if this player is calling `key` too fast (or flooding the store overall).
+local function rateLimited(src, key, ms)
+    local now = GetGameTimer()
+
+    local f = flood[src]
+    if not f or now - f.start > FLOOD.windowSeconds * 1000 then
+        f = { start = now, count = 0 }
+        flood[src] = f
+    end
+    f.count = f.count + 1
+    if f.count > FLOOD.requests then
+        if not floodReported[src] then
+            floodReported[src] = true
+            log(('FLOOD: %s sent %d store requests in %ds'):format(GetPlayerName(src) or src, f.count, FLOOD.windowSeconds))
+            sendLog('Store request flood (possible exploit)', COLORS.fail, {
+                { 'Player', who(src) },
+                { 'Requests', ('%d+ in %ds'):format(FLOOD.requests, FLOOD.windowSeconds), true },
+                { 'Last request', key, true },
+            })
+        end
+        return true
+    end
+
+    local k = key .. ':' .. src
+    if lastCall[k] and now - lastCall[k] < ms then return true end
+    lastCall[k] = now
+    return false
+end
+
+AddEventHandler('playerDropped', function()
+    local src = source
+    flood[src], floodReported[src] = nil, nil
+    local suffix = ':' .. tostring(src)
+    for k in pairs(lastCall) do
+        if k:sub(-#suffix) == suffix then lastCall[k] = nil end
+    end
+end)
+
+--- Server-side events like QBCore:Server:PlayerLoaded must come from the server, with a real player.
+local function realLoadedPlayer(player)
+    local src = player and player.PlayerData and tonumber(player.PlayerData.source)
+    if not src or not GetPlayerName(src) then return nil end
+    local live = exports.qbx_core:GetPlayer(src)
+    if not live or live.PlayerData.citizenid ~= player.PlayerData.citizenid then return nil end
+    return src
+end
+
 local function balanceLine(before, after)
     return ('%s → %s'):format(before, after)
 end
@@ -203,6 +275,8 @@ handlers.give_item = function(src, payload)
     if not Config.ItemDeliveries then return false, 'item deliveries are turned off' end
     local item, count = payload.item, math.floor(tonumber(payload.count) or 1)
     if type(item) ~= 'string' or count < 1 then return false, 'delivery has no item' end
+    if count > 10000 then return false, 'delivery count is too large' end
+    if not exports.ox_inventory:Items(item) then return false, ('unknown item "%s"'):format(item) end
     if not exports.ox_inventory:CanCarryItem(src, item, count) then
         notify(src, 'You have a store item waiting, but your pockets are full. Make some room.', 'warning')
         return false, 'inventory full'
@@ -215,8 +289,17 @@ end
 
 -- Other resources can add their own delivery types (vehicles, houses...).
 -- fn(source, payload, row) must return true, or false + a reason.
+local BUILTIN_HANDLERS = { notify = true, give_item = true }
+
 exports('RegisterDeliveryHandler', function(action, fn)
-    if type(action) == 'string' and fn then handlers[action] = fn end
+    if not trustedCaller('RegisterDeliveryHandler') then return false end
+    if type(action) ~= 'string' or not fn then return false end
+    if BUILTIN_HANDLERS[action] then
+        log(('Refused: %s tried to replace the built-in "%s" delivery type.'):format(GetInvokingResource() or '?', action))
+        return false
+    end
+    handlers[action] = fn
+    return true
 end)
 
 local PENDING = "(status = 'pending' OR (status = 'claimed' AND claimed_at < (CURRENT_TIMESTAMP(3) - INTERVAL 5 MINUTE)))"
@@ -262,7 +345,6 @@ local function processDeliveries(players)
                     "UPDATE pmv2_store_deliveries SET status = 'delivered', delivered_to = ?, delivered_at = CURRENT_TIMESTAMP(3), last_error = NULL WHERE id = ?",
                     { p.citizenid, row.id }
                 )
-                debug(('Delivered #%s (%s) to %s'):format(row.id, row.action, p.citizenid))
                 local what = payload.message or (payload.item and ('%sx %s'):format(payload.count or 1, payload.item)) or row.action
                 local fields = { { 'Player', who(p.src) }, { 'Delivered', what } }
                 if payload.order_ref then fields[#fields + 1] = { 'Order', payload.order_ref, true } end
@@ -320,7 +402,7 @@ local function checkSoon(src)
 end
 
 AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
-    local src = player and player.PlayerData and player.PlayerData.source
+    local src = realLoadedPlayer(player)
     if src then checkSoon(src) end
 end)
 
@@ -442,8 +524,12 @@ local function adjustCoins(target, delta, reason, actor, staffSrc)
 end
 
 exports('GetCoins', function(src) return (getCoins(src)) end)
-exports('SpendCoins', spendCoins)
+exports('SpendCoins', function(src, amount, reference)
+    if not trustedCaller('SpendCoins') then return false, 'not_allowed' end
+    return spendCoins(src, amount, reference)
+end)
 exports('AddCoins', function(target, amount, reason)
+    if not trustedCaller('AddCoins') then return false, 'not_allowed' end
     amount = math.floor(tonumber(amount) or 0)
     if amount <= 0 then return false, 'invalid_amount' end
     return adjustCoins(target, amount, reason or 'Script grant', 'script:' .. (GetInvokingResource() or 'unknown'))
@@ -463,6 +549,9 @@ Store = {
     DiscordOf = discordOf,
     CustomerByDiscord = customerByDiscord,
     Log = sendLog,                       -- (title, color, fields{{name, value, inline?}}, description?)
+    RateLimited = rateLimited,           -- (src, key, ms) -> true if too fast
+    TrustedCaller = trustedCaller,       -- (exportName) -> true if the calling resource may use it
+    RealLoadedPlayer = realLoadedPlayer, -- (player) -> src of a genuine PlayerLoaded event, or nil
     Who = who,
     Colors = COLORS,
     RegisterDeliveryHandler = function(action, fn) handlers[action] = fn end,
@@ -619,7 +708,7 @@ CreateThread(function()
 end)
 
 AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
-    local src = player and player.PlayerData and player.PlayerData.source
+    local src = realLoadedPlayer(player)
     if src then SetTimeout(6000, function() pcall(processTebex, src) end) end
 end)
 

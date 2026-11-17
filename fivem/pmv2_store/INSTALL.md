@@ -10,7 +10,7 @@ and the in-city VIP shop + vehicle showroom. (This replaces `misfits_vip`. See "
 - `/coins` for players, plus exports so other scripts can spend coins
 - Staff tools: `/coinsadd`, `/coinsremove`, `/storelookup`, `/storedone`, `/vipadmin`
 
-Needs: `qbx_core`, `qbx_vehicles`, `ox_lib`, `oxmysql`, `ox_inventory`, `ox_target` (and `qbx_vehiclekeys` for showroom keys).
+Needs: `qbx_core`, `qbx_vehicles`, `ox_lib`, `oxmysql`, `ox_inventory`, `ox_target` (and `tgiann-hotwire` for showroom keys; `qbx_vehiclekeys` also works as a fallback).
 
 ## Install
 1. Run `db/pmv2_store.sql` (in the website repo) on the **same database** your server uses.
@@ -46,7 +46,7 @@ What happens:
 - Each transaction is only ever credited once, even if Tebex sends the command again.
 - A refund/chargeback takes the coins back (balance can go negative if they already spent them).
   A refund that lands before the coins were credited cancels the purchase.
-- Every purchase and reversal is posted to `Config.LogWebhook` with the balance before -> after.
+- Every purchase and reversal is posted to the Discord log webhook (config/server.lua) with the balance before -> after.
 - The `pmv2_store_tebex` table is created automatically.
 
 ## VIP shop
@@ -108,7 +108,8 @@ If the car can't be spawned for any reason, the purchase still goes through and 
    (IsVip, GetTier, HasTier, GetPerk...) were removed with the tiers.
 
 ## Discord logs
-Put a channel webhook URL in `Config.LogWebhook` (config.lua). It logs:
+Put a channel webhook URL in `config/server.lua` (or `set pmv2_store_webhook "..."` in server.cfg).
+**Never put it in config.lua** - that file is downloaded by every player. It logs:
 - **Coins spent** in the city: who, what they bought, cost, balance before → after, which script
 - **Coins added / removed**: by staff (with reason) or by a script, balance before → after
 - **Store deliveries** received in the city, and any that **failed**
@@ -166,3 +167,20 @@ loads in) this resource looks for rows for online players, claims each one so it
 handed out twice, delivers it, and marks it delivered. If the player is offline or the server
 was down, it waits. If a delivery keeps failing (full inventory, etc.) it's retried up to
 `Config.MaxAttempts` times, and staff can see why in `/storelookup`.
+
+
+## Security (v2.2)
+- **config/server.lua is server-only.** The webhook and the trusted-resource list live there; players never download it.
+  If a webhook is still set in config.lua, the console prints a red SECURITY warning on start.
+- **Coin exports are locked.** `AddCoins`, `SpendCoins`, `GiveVoucher` and `RegisterDeliveryHandler` only answer
+  resources listed in `Config.TrustedResources` (default: everything named `pmv2_*`). Anything else is blocked,
+  printed in the console and posted to the Discord log, so a backdoored script can't print coins.
+  `GetCoins` and `GetDiscordId` stay open (read-only).
+- **Built-in delivery types (`notify`, `give_item`) can't be replaced** by another resource.
+- **Every store and showroom request is rate-limited per player**, and a player sending more than
+  `Config.FloodLimit` requests is blocked for that window and reported to Discord as a possible exploit.
+- **Store deliveries are checked:** unknown items and absurd counts are refused and logged.
+- **Fake login events are ignored:** `QBCore:Server:PlayerLoaded` is only trusted for a real, matching player.
+- **No debug mode:** the debug flag and debug prints are gone.
+- Client files only draw the UI, peds and display cars. Every price, balance, distance and limit is
+  checked on the server, so a dumped or edited client gets nothing it can use.
