@@ -53,6 +53,12 @@ Config.Vehicles = {
     garage      = 'pillboxgarage',       -- must match a garage name in your garage resource
     state       = 1,                     -- 1 = in garage (used by the fallback insert only)
     plateFormat = '1AA111AA',            -- ox_lib pattern: 1 = digit, A = letter, . = any
+
+    -- Keys: showroom buys keep their key, test drives get one that's taken back when the drive ends.
+    keys = {
+        resource = 'tgiann-hotwire',     -- key script (falls back to qbx_vehiclekeys if it isn't running)
+        item     = 'car_key',            -- tgiann's key item in ox_inventory
+    },
 }
 
 -- ─────────────────────────────────────────────────────────────

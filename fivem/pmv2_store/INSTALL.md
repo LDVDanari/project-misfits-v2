@@ -10,7 +10,7 @@ and the in-city VIP shop + vehicle showroom. (This replaces `misfits_vip`. See "
 - `/coins` for players, plus exports so other scripts can spend coins
 - Staff tools: `/coinsadd`, `/coinsremove`, `/storelookup`, `/storedone`, `/vipadmin`
 
-Needs: `qbx_core`, `qbx_vehicles`, `ox_lib`, `oxmysql`, `ox_inventory`, `ox_target` (and `qbx_vehiclekeys` for showroom keys).
+Needs: `qbx_core`, `qbx_vehicles`, `ox_lib`, `oxmysql`, `ox_inventory`, `ox_target` (and `tgiann-hotwire` for showroom keys; `qbx_vehiclekeys` also works as a fallback).
 
 ## Install
 1. Run `db/pmv2_store.sql` (in the website repo) on the **same database** your server uses.
